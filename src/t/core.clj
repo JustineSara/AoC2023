@@ -1,6 +1,6 @@
 (ns t.core
   (:gen-class)
-  (:require 
+  (:require
    [clojure.string :as str]))
 
 
@@ -1023,27 +1023,36 @@ zoneight234
 
 (defn sol1
   [input]
-  (apply + 
-    (map 
-     (fn [l] (Integer. (str (re-find #"\d" l) (re-find #"\d" (str/reverse l))))) 
-     (str/split-lines input))))
+  (apply +
+         (map
+          (fn [l] (Integer. (str (re-find #"\d" l) (re-find #"\d" (str/reverse l)))))
+          (str/split-lines input))))
 
 
 (defn maptonumber
   [t]
   ({"1" 1 "2" 2 "3" 3 "4" 4 "5" 5 "6" 6 "7" 7 "8" 8 "9" 9
-        "one" 1 "two" 2 "three" 3 "four" 4 "five" 5 "six" 6 "seven" 7 "eight" 8 "nine" 9
-        "eno" 1 "owt" 2 "eerht" 3 "ruof" 4 "evif" 5 "xis" 6 "neves" 7 "thgie" 8 "enin" 9
-        } t))
+    "one" 1 "two" 2 "three" 3 "four" 4 "five" 5 "six" 6 "seven" 7 "eight" 8 "nine" 9
+    "eno" 1 "owt" 2 "eerht" 3 "ruof" 4 "evif" 5 "xis" 6 "neves" 7 "thgie" 8 "enin" 9} t))
 
 (defn sol2
   [input]
   (apply +
          (map
-          (fn [l] (Integer. (str 
-                             (maptonumber (re-find #"\d|one|two|three|four|five|six|seven|eight|nine" l)) 
-                             (maptonumber (re-find #"\d|eno|owt|eerht|ruof|evif|xis|neves|thgie|enin" (str/reverse l))))))
-          (str/split-lines input))))
+           (fn [l] (parse-long (str
+                                 (maptonumber (re-find #"\d|one|two|three|four|five|six|seven|eight|nine" l))
+                                 (maptonumber (re-find #"\d|eno|owt|eerht|ruof|evif|xis|neves|thgie|enin" (str/reverse l))))))
+           (str/split-lines input))))
+
+;; Integer. : bad idea
+;;    capital letter = java class 
+;;    CapitalLetter + "." = contructor of the java class
+;;    - creates new object
+;;    - Integer : entier en 32bits  ==> max is 2.10^9 : not that much with advent of code and no warning/error
+;; 
+;; better solve : integer 64bit
+;; Long (don't use "Long." because again new object)
+;;    parse-long
 
 (defn -main
   "I don't do a whole lot ... yet."
