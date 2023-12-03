@@ -1068,6 +1068,7 @@ zoneight234
   (println (sol2 input2))
   (println "With my input:")
   (println (sol2 myinput))
+  (println (sol2 (slurp "input/day1.txt")))
   ;; (println "2two1sevenine")
   ;; (println (re-find #"\d|one|two|three|four|five|six|seven|eight|nine" "2two1sevenine"))
   ;; (println (map maptonumber 
