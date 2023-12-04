@@ -1,6 +1,6 @@
 (ns t.core
   (:gen-class)
-  (:require 
+  (:require
    [clojure.string :as str]))
 
 
@@ -1023,50 +1023,138 @@ zoneight234
 
 (defn sol1
   [input]
-  (apply + 
-    (map 
-     (fn [l] (Integer. (str (re-find #"\d" l) (re-find #"\d" (str/reverse l))))) 
-     (str/split-lines input))))
+  (apply +
+         (map
+          (fn [l] (Integer. (str (re-find #"\d" l) (re-find #"\d" (str/reverse l)))))
+          (str/split-lines input))))
 
 
 (defn maptonumber
   [t]
   ({"1" 1 "2" 2 "3" 3 "4" 4 "5" 5 "6" 6 "7" 7 "8" 8 "9" 9
-        "one" 1 "two" 2 "three" 3 "four" 4 "five" 5 "six" 6 "seven" 7 "eight" 8 "nine" 9
-        "eno" 1 "owt" 2 "eerht" 3 "ruof" 4 "evif" 5 "xis" 6 "neves" 7 "thgie" 8 "enin" 9
-        } t))
+    "one" 1 "two" 2 "three" 3 "four" 4 "five" 5 "six" 6 "seven" 7 "eight" 8 "nine" 9
+    "eno" 1 "owt" 2 "eerht" 3 "ruof" 4 "evif" 5 "xis" 6 "neves" 7 "thgie" 8 "enin" 9} t))
 
 (defn sol2
   [input]
   (apply +
          (map
-          (fn [l] (Integer. (str 
-                             (maptonumber (re-find #"\d|one|two|three|four|five|six|seven|eight|nine" l)) 
-                             (maptonumber (re-find #"\d|eno|owt|eerht|ruof|evif|xis|neves|thgie|enin" (str/reverse l))))))
-          (str/split-lines input))))
+           (fn [l] (parse-long (str
+                                 (maptonumber (re-find #"\d|one|two|three|four|five|six|seven|eight|nine" l))
+                                 (maptonumber (re-find #"\d|eno|owt|eerht|ruof|evif|xis|neves|thgie|enin" (str/reverse l))))))
+           (str/split-lines input))))
 
-(defn -main
-  "I don't do a whole lot ... yet."
-  [& args]
-  (println "Hello, World!!")
-  ;; (println "Part 1")
-  ;; (println input)
-  ;; (println (sol1 input))
-  ;; (println "With my input:")
-  ;; (println (sol1 myinput))
-  (println "Part 2")
+;; Integer. : bad idea
+;;    capital letter = java class 
+;;    CapitalLetter + "." = contructor of the java class
+;;    - creates new object
+;;    - Integer : entier en 32bits  ==> max is 2.10^9 : not that much with advent of code and no warning/error
+;; 
+;; better solve : integer 64bit
+;; Long (don't use "Long." because again new object)
+;;    parse-long
+
+
+(defn mainD1
+  []
+  (println "Hello, World!")
+  (println "Part 1")
+  (println input)
+  (println (sol1 input))
+  (println "With my input:")
+  (println (sol1 myinput))
+  (println "\nPart 2")
   (println input2)
   (println (sol2 input2))
   (println "With my input:")
   (println (sol2 myinput))
+  (println (sol2 (slurp "input/day1.txt"))))
+
   ;; (println "2two1sevenine")
   ;; (println (re-find #"\d|one|two|three|four|five|six|seven|eight|nine" "2two1sevenine"))
   ;; (println (map maptonumber 
   ;;               [(re-find #"\d|one|two|three|four|five|six|seven|eight|nine" "2two1sevenine") (re-find #"\d|eno}owt|eerht|ruof|evif|xis|neves|thgie|enin" (str/reverse "2two1sevenine"))]))
-  )
+  
 
 ;; 55427 too high
 
   ;; (println "pqr3stu8vwx")
   ;; (println ((fn [l] (Integer. (str (re-find #"\d" l) (re-find #"\d" (str/reverse l))))) "pqr3stu8vwx"))
   ;; (println (slurp ))
+  
+
+(def inputd2
+  "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
+Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
+Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green")
+
+(defn iscolorok?
+  [color numb cubes]
+  (reduce (fn [a b] (and a b)) true
+          (map (fn [b] (<= (parse-long (re-find #"\d+" b)) numb))
+               (re-seq (re-pattern (str "\\d+ " color)) cubes))))
+;; reduce needs a function of two elements
+;; `and` is _not_ a function so we have to define one
+;; we set `true` as a starting point in case the sequence has only one element
+
+(defn d2part1
+  [input]
+  (apply +
+    (map (fn [ [g c] ] (if
+                    (and
+                         (iscolorok? "red" 12 c)
+                         (iscolorok? "green" 13 c)
+                         (iscolorok? "blue" 14 c))
+                    (parse-long (re-find #"\d+" g))
+                    0))
+      (map (fn [l] (str/split l #":" 2)) (str/split-lines input)))))
+;; use destructuring 
+;; fn [input]
+;; input is [game color]
+;; so : fn[[game color]]
+
+
+(defn mincolor
+  [color cubes]
+  (reduce (fn [a b] (if (> a b) a b)) 0
+          (map (fn [b] (parse-long (re-find #"\d+" b)))
+               (re-seq (re-pattern (str "\\d+ " color)) cubes))))
+;; note : max is a function that exists ^^
+
+(defn d2part2
+  [input]
+  (apply +
+         (map (fn [ll] (* (mincolor "red" (last ll))
+                          (mincolor "green" (last ll))
+                          (mincolor "blue" (last ll))))
+              (map (fn [l] (str/split l #":" 2)) (str/split-lines input)))))
+
+(def cubegame4
+  "1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red")
+
+(defn mainD2
+  []
+  (println "Day 2 - cube game")
+  (println "~~~ part1 ~~~")
+  (println (d2part1 inputd2))
+  ;; (println (iscolorok? "blue" 14 "1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red"))
+  (println (d2part1 (slurp "input/day2.txt")))
+  (println "~~~ part2 ~~~")
+  ;; (println "Game 4: " cubegame4)
+  ;; (println "blue : " (mincolor "blue" cubegame4))
+  ;; (println "green : " (mincolor "green" cubegame4))
+  ;; (println "Game 4 power : " (* (mincolor "blue" cubegame4) (mincolor "green" cubegame4) (mincolor "red" cubegame4)))
+  (println (d2part2 inputd2))
+  (println (d2part2 (slurp "input/day2.txt"))))
+
+
+(defn -main
+  "I don't do a whole lot ... yet."
+  [& args]
+  (
+  ;;  mainD1
+    mainD2
+  )
+)
