@@ -1149,12 +1149,14 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green")
   (println (d2part2 inputd2))
   (println (d2part2 (slurp "input/day2.txt"))))
 
+(defn mainD0
+  []
+  (println "no day 0!"))
 
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (
-  ;;  mainD1
-    mainD2
-  )
-)
+  (let [available-days {:0 mainD0 :1 mainD1 :2 mainD2} this-day (keyword (first args))]
+    (if (contains? available-days this-day)
+      ((get available-days this-day))
+      ((last (last available-days))))))
