@@ -1153,10 +1153,105 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green")
   []
   (println "no day 0!"))
 
+
+
+(def day3sample 
+"467..114..
+...*......
+..35..633.
+......#...
+617*......
+.....+.58.
+..592.....
+......755.
+...$.*....
+.664.598..")
+
+(defn get-all-num
+  ([idx-line line]
+    (let [num (re-find #"\d+" line)]
+      (if num 
+        (get-all-num 
+          idx-line
+          (seq (vector [idx-line (str/index-of line num) (+ (str/index-of line num) (count num) -1) (parse-long num)]))
+          (str/replace-first line (re-pattern num) (str/join "" (for [_ (range (count num))] "."))))
+        [ (seq ()) line]))
+  )
+  ([idx-line seq-of-num line]
+    (let [num (re-find #"\d+" line)]
+      (if num
+        (get-all-num
+          idx-line
+          (conj seq-of-num [idx-line (str/index-of line num) (+ (str/index-of line num) (count num) -1) (parse-long num)])
+          (str/replace-first line (re-pattern num) (str/join "" (for [_ (range (count num))] "."))))
+        [seq-of-num line]))
+  ))
+
+(defn get-symbols
+  ([idx-line line]
+   (let [sym (re-find #"[^\.]" line)]
+     (if sym
+       (get-symbols
+         idx-line
+         (seq (vector [idx-line (str/index-of line sym)]))
+         (str/replace-first line sym "."))
+       (seq ()))))
+  ([idx-line seq-sym line]
+   (let [sym (re-find #"[^\.]" line)]
+     (if sym
+       (get-symbols
+         idx-line
+         (conj seq-sym [idx-line (str/index-of line sym)])
+         (str/replace-first line sym "."))
+       seq-sym))))
+
+(defn day3part1
+  [input]
+  (let [lines (str/split-lines input)
+        all-num-and-sym (map-indexed
+                         (fn [idx-line line] ((fn [[nums line]] [nums (get-symbols idx-line line)]) (get-all-num idx-line line)))
+                         lines)
+        nums (apply concat (apply conj [] (map first all-num-and-sym)))
+        syms (apply concat (apply conj [] (map last all-num-and-sym)))]
+    ;; (println nums)
+    ;; (println syms)
+    ;; (println (map
+    ;;           (fn [[idx-line xmin xmax value]]
+    ;;             (vector value (filter (fn [[i-line-s x-s]]
+    ;;                                     (and
+    ;;                                      (or (= i-line-s idx-line) (= (+ i-line-s 1) idx-line) (= (- i-line-s 1) idx-line))
+    ;;                                      (and (<= x-s (+ xmax 1)) (>= x-s (- xmin 1)))))
+    ;;                                   syms)))
+    ;;           nums))
+    (apply + (map
+                       (fn [[idx-line xmin xmax value]]
+                         (if (> (count (filter (fn [[i-line-s x-s]]
+                                                 (and
+                                                  (or (= i-line-s idx-line) (= (+ i-line-s 1) idx-line) (= (- i-line-s 1) idx-line))
+                                                  (and (<= x-s (+ xmax 1)) (>= x-s (- xmin 1)))))
+                                               syms)) 0)
+                           value 0))
+                       nums))))
+
+(defn mainD3
+  []
+  (println "Day 3 -")
+  (println day3sample)
+  (println (day3part1 day3sample))
+  (println (day3part1 (slurp "input/day3.txt")))
+)
+
+
+
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (let [available-days {:0 mainD0 :1 mainD1 :2 mainD2} this-day (keyword (first args))]
+  (let [available-days {:0 mainD0 
+                        :1 mainD1 
+                        :2 mainD2
+                        :3 mainD3} 
+        this-day (keyword (first args))]
     (if (contains? available-days this-day)
       ((get available-days this-day))
       ((last (last available-days))))))
