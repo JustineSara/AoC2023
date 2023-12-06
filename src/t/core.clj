@@ -1283,20 +1283,54 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green")
   (println (day3part1 (slurp "input/day3.txt")))
   (println "part 2 - gear power")
   (println (day3part2 day3sample))
-  (println (day3part2 (slurp "input/day3.txt")))
-)
+  (println (day3part2 (slurp "input/day3.txt"))))
+
+(def d4sample
+  "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
+Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19
+Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1
+Card 4: 41 92 73 84 69 | 59 84 76 51 58  5 54 83
+Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36
+Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11")
+
+(defn cardvalue
+  [value n-match]
+  (if (and n-match (> n-match 0))
+    (if (= value 0)
+      (cardvalue 1 (- n-match 1))
+      (cardvalue (* value 2) (- n-match 1)))
+    value))
+
+(defn count-matchs
+  [[win have]]
+  (apply +
+    (map (fn [h] (if (nil? (some #(= h %) win)) 0 1)) have)))
+
+(defn d4part1
+  [input]
+  (let [lines (str/split-lines input)]
+    (apply +
+      (map (fn [l] (let [[win have] (str/split (last (str/split l #"\:")) #"\|")]
+                     (cardvalue 0 (count-matchs (vector (re-seq #"\d+" win) (re-seq #"\d+" have)))))) lines))))
+
+(defn mainD4
+  []
+  (println "Day 4 - scratch cards")
+  (println d4sample)
+  (println (d4part1 d4sample))
+  (println (d4part1 (slurp "input/day4.txt"))))
 
 
 
-
-(defn -main
-      "I don't do a whole lot ... yet."
-      [& args]
-      (let [available-days {:0 mainD0
-                            :1 mainD1
-                            :2 mainD2
-                            :3 mainD3}
-            this-day (keyword (first args))]
-        (if (contains? available-days this-day)
-          ((get available-days this-day))
-          ((last (last available-days))))))
+   (defn -main
+     "I don't do a whole lot ... yet."
+     [& args]
+     (let [available-days {:0 mainD0
+                           :1 mainD1
+                           :2 mainD2
+                           :3 mainD3
+                           :4 mainD4}
+           this-day (keyword (first args))]
+       (if (contains? available-days this-day)
+         ((get available-days this-day))
+         ((last (last available-days))))))
