@@ -1039,10 +1039,10 @@ zoneight234
   [input]
   (apply +
          (map
-           (fn [l] (parse-long (str
-                                 (maptonumber (re-find #"\d|one|two|three|four|five|six|seven|eight|nine" l))
-                                 (maptonumber (re-find #"\d|eno|owt|eerht|ruof|evif|xis|neves|thgie|enin" (str/reverse l))))))
-           (str/split-lines input))))
+          (fn [l] (parse-long (str
+                               (maptonumber (re-find #"\d|one|two|three|four|five|six|seven|eight|nine" l))
+                               (maptonumber (re-find #"\d|eno|owt|eerht|ruof|evif|xis|neves|thgie|enin" (str/reverse l))))))
+          (str/split-lines input))))
 
 ;; Integer. : bad idea
 ;;    capital letter = java class 
@@ -1074,14 +1074,14 @@ zoneight234
   ;; (println (re-find #"\d|one|two|three|four|five|six|seven|eight|nine" "2two1sevenine"))
   ;; (println (map maptonumber 
   ;;               [(re-find #"\d|one|two|three|four|five|six|seven|eight|nine" "2two1sevenine") (re-find #"\d|eno}owt|eerht|ruof|evif|xis|neves|thgie|enin" (str/reverse "2two1sevenine"))]))
-  
+
 
 ;; 55427 too high
 
   ;; (println "pqr3stu8vwx")
   ;; (println ((fn [l] (Integer. (str (re-find #"\d" l) (re-find #"\d" (str/reverse l))))) "pqr3stu8vwx"))
   ;; (println (slurp ))
-  
+
 
 (def inputd2
   "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
@@ -1102,14 +1102,14 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green")
 (defn d2part1
   [input]
   (apply +
-    (map (fn [ [g c] ] (if
-                    (and
-                         (iscolorok? "red" 12 c)
-                         (iscolorok? "green" 13 c)
-                         (iscolorok? "blue" 14 c))
-                    (parse-long (re-find #"\d+" g))
-                    0))
-      (map (fn [l] (str/split l #":" 2)) (str/split-lines input)))))
+         (map (fn [[g c]] (if
+                           (and
+                            (iscolorok? "red" 12 c)
+                            (iscolorok? "green" 13 c)
+                            (iscolorok? "blue" 14 c))
+                            (parse-long (re-find #"\d+" g))
+                            0))
+              (map (fn [l] (str/split l #":" 2)) (str/split-lines input)))))
 ;; use destructuring 
 ;; fn [input]
 ;; input is [game color]
@@ -1149,12 +1149,154 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green")
   (println (d2part2 inputd2))
   (println (d2part2 (slurp "input/day2.txt"))))
 
+(defn mainD0
+  []
+  (println "no day 0!"))
+
+
+
+(def day3sample
+  "467..114..
+...*......
+..35..633.
+......#...
+617*......
+.....+.58.
+..592.....
+......755.
+...$.*....
+.664.598..")
+
+(defn get-all-num
+  ([idx-line line]
+   (let [num (re-find #"\d+" line)]
+     (if num
+       (get-all-num
+        idx-line
+        (seq (vector [idx-line (str/index-of line num) (+ (str/index-of line num) (count num) -1) (parse-long num)]))
+        (str/replace-first line (re-pattern num) (str/join "" (for [_ (range (count num))] "."))))
+       [(seq ()) line])))
+  ([idx-line seq-of-num line]
+   (let [num (re-find #"\d+" line)]
+     (if num
+       (get-all-num
+        idx-line
+        (conj seq-of-num [idx-line (str/index-of line num) (+ (str/index-of line num) (count num) -1) (parse-long num)])
+        (str/replace-first line (re-pattern num) (str/join "" (for [_ (range (count num))] "."))))
+       [seq-of-num line]))))
+
+(defn get-symbols
+  ([idx-line line]
+   (let [sym (re-find #"[^\.]" line)]
+     (if sym
+       (get-symbols
+        idx-line
+        (seq (vector [idx-line (str/index-of line sym)]))
+        (str/replace-first line sym "."))
+       (seq ()))))
+  ([idx-line seq-sym line]
+   (let [sym (re-find #"[^\.]" line)]
+     (if sym
+       (get-symbols
+        idx-line
+        (conj seq-sym [idx-line (str/index-of line sym)])
+        (str/replace-first line sym "."))
+       seq-sym))))
+
+
+(defn get-stars
+  ([idx-line line]
+   (let [sym (re-find #"\*" line)]
+     (if sym
+       (get-stars
+        idx-line
+        (seq (vector [idx-line (str/index-of line sym)]))
+        (str/replace-first line sym "."))
+       (seq ()))))
+  ([idx-line seq-sym line]
+   (let [sym (re-find #"\*" line)]
+     (if sym
+       (get-stars
+        idx-line
+        (conj seq-sym [idx-line (str/index-of line sym)])
+        (str/replace-first line sym "."))
+       seq-sym))))
+
+(defn day3part1
+  [input]
+  (let [lines (str/split-lines input)
+        all-num-and-sym (map-indexed
+                         (fn [idx-line line] ((fn [[nums line]] [nums (get-symbols idx-line line)]) (get-all-num idx-line line)))
+                         lines)
+        nums (apply concat (apply conj [] (map first all-num-and-sym)))
+        syms (apply concat (apply conj [] (map last all-num-and-sym)))]
+    ;; (println nums)
+    ;; (println syms)
+    ;; (println (map
+    ;;           (fn [[idx-line xmin xmax value]]
+    ;;             (vector value (filter (fn [[i-line-s x-s]]
+    ;;                                     (and
+    ;;                                      (or (= i-line-s idx-line) (= (+ i-line-s 1) idx-line) (= (- i-line-s 1) idx-line))
+    ;;                                      (and (<= x-s (+ xmax 1)) (>= x-s (- xmin 1)))))
+    ;;                                   syms)))
+    ;;           nums))
+    (apply + (map
+              (fn [[idx-line xmin xmax value]]
+                (if (> (count (filter (fn [[i-line-s x-s]]
+                                        (and
+                                         (or (= i-line-s idx-line) (= (+ i-line-s 1) idx-line) (= (- i-line-s 1) idx-line))
+                                         (and (<= x-s (+ xmax 1)) (>= x-s (- xmin 1)))))
+                                      syms)) 0)
+                  value 0))
+              nums))))
+
+
+
+(defn day3part2
+  [input]
+  (let [lines (str/split-lines input)
+        all-num-and-sym (map-indexed
+                         (fn [idx-line line] ((fn [[nums line]] [nums (get-stars idx-line line)]) (get-all-num idx-line line)))
+                         lines)
+        nums (apply concat (apply conj [] (map first all-num-and-sym)))
+        syms (apply concat (apply conj [] (map last all-num-and-sym)))]
+    ;; (println nums)
+    ;; (println syms)
+    (apply + (map last
+                  (filter
+                   (fn [[n _]] (= n 2))
+                   (map (fn [[idx-line x-s]]
+                          (let [neighbors (filter
+                                           (fn [[i-line xmin xmax value]]
+                                             (and (or (= idx-line i-line) (= idx-line (+ i-line 1)) (= idx-line (- i-line 1)))
+                                                  (and (<= x-s (+ xmax 1)) (>= x-s (- xmin 1)))))
+                                           nums)]
+                            (vector (count neighbors) (apply * (map last neighbors)))))
+                        syms))))))
+
+(defn mainD3
+  []
+  (println "Day 3 - engine schematics")
+  (println day3sample)
+  (println "part 1")
+  (println (day3part1 day3sample))
+  (println (day3part1 (slurp "input/day3.txt")))
+  (println "part 2 - gear power")
+  (println (day3part2 day3sample))
+  (println (day3part2 (slurp "input/day3.txt")))
+)
+
+
+
 
 (defn -main
-  "I don't do a whole lot ... yet."
-  [& args]
-  (
-  ;;  mainD1
-    mainD2
-  )
-)
+      "I don't do a whole lot ... yet."
+      [& args]
+      (let [available-days {:0 mainD0
+                            :1 mainD1
+                            :2 mainD2
+                            :3 mainD3}
+            this-day (keyword (first args))]
+        (if (contains? available-days this-day)
+          ((get available-days this-day))
+          ((last (last available-days))))))
