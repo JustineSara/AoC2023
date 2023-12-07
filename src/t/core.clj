@@ -1313,12 +1313,62 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11")
       (map (fn [l] (let [[win have] (str/split (last (str/split l #"\:")) #"\|")]
                      (cardvalue 0 (count-matchs (vector (re-seq #"\d+" win) (re-seq #"\d+" have)))))) lines))))
 
+(defn get-card-values
+  [line]
+  (let [[card values] (str/split line #"\:")
+        card-id (parse-long (re-find #"\d+" card))
+        [win have] (map (fn [s] (re-seq #"\d+" s)) (str/split values #"\|"))]
+    {:card-id card-id  :win win :have have}))
+
+
+(defn count-cards
+  ([dict-cards]
+    (count-cards
+     0 ;; N-cards
+     (range 1 (+ (count dict-cards) 1)) ;; list-cards
+     dict-cards))
+  ([N-cards list-cards dict-cards]
+    (if (> (count list-cards) 0)
+       (let [card-id (apply min list-cards)
+             new-list-cards (filter #(> % card-id) list-cards)
+             n-cards (- (count list-cards) (count new-list-cards))
+             card (first (get dict-cards card-id))
+             N-matchs (count-matchs (vector (:win card) (:have card)))
+             ]
+
+          (println card-id n-cards 
+                ;;    card N-matchs
+                ;; (concat 
+                ;;   (apply concat (repeat n-cards (filter #(<= % (count dict-cards)) (range (+ 1 card-id) (+ 1 card-id N-matchs)))))
+                ;;   new-list-cards))
+          )
+          (count-cards
+            (+ N-cards n-cards)
+            (concat
+              (apply concat (repeat n-cards (filter #(<= % (count dict-cards)) (range (+ 1 card-id) (+ 1 card-id N-matchs)))))
+              new-list-cards)
+            dict-cards))
+       N-cards)))
+
+;; could have try to use SWAP! to keep track of the number of each cards
+;; nope ! seems swap is more complexe than that or you need to work with atoms
+;; Care (update map key function(with previous value)) --> does not update the map but creates a new one
+
+(defn d4part2
+  [input]
+  (let [lines (str/split-lines input)
+        dict-cards (group-by :card-id (map get-card-values lines))]
+    (count-cards dict-cards)))
+
 (defn mainD4
   []
   (println "Day 4 - scratch cards")
   (println d4sample)
   (println (d4part1 d4sample))
-  (println (d4part1 (slurp "input/day4.txt"))))
+  (println (d4part1 (slurp "input/day4.txt")))
+  (println "part 2 - count cards")
+  (println (d4part2 d4sample))
+  (println (d4part2 (slurp "input/day4.txt"))))
 
 
 
