@@ -1371,6 +1371,75 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11")
   (println (d4part2 (slurp "input/day4.txt"))))
 
 
+(def d8sample1 "RL
+
+AAA = (BBB, CCC)
+BBB = (DDD, EEE)
+CCC = (ZZZ, GGG)
+DDD = (DDD, DDD)
+EEE = (EEE, EEE)
+GGG = (GGG, GGG)
+ZZZ = (ZZZ, ZZZ)"
+)
+
+(def d8sample2 "LLR
+
+AAA = (BBB, BBB)
+BBB = (AAA, ZZZ)
+ZZZ = (ZZZ, ZZZ)")
+
+(defn dir->fct
+  [dir]
+  (map (fn [d] (cond
+                 (= d \R) last
+                 (= d \L) first
+                 :else (println "\ta letter is not L or R!")
+                 )) dir))
+
+;; \R is not the same as "R" but should be use when comparing letters (?)
+
+
+(defn dict-of-nodes
+  [nodes]
+  (apply 
+    sorted-map 
+    (mapcat 
+      (fn [l] (let [[k v] (str/split l #" = ")]
+                    [k (re-seq #"[A-Z]{3}" v)]))
+      (str/split-lines nodes))))
+;; this gives a map from nodes to nodes. the keys of the maps are 'symbol' (not 'keyword')
+;;      might need to use (keyword XXX) to access the values
+
+(defn d8part1
+  [input]
+  (let [[dir nodes] (str/split input #"\n\n")
+        dirfct (dir->fct dir)
+        nodesmap (dict-of-nodes nodes)]
+    (newline)
+    (println (first dir))
+    (loop
+      [step 0 node "AAA"]
+      (when (= (mod step 1000) 0) 
+        (newline)
+        (println step "," node "-->" (get nodesmap node))
+        (println "               " ((nth (apply concat (repeat dirfct)) step) ["L" "R"])))
+      (if (= node "ZZZ")
+        step
+        (recur (inc step) ((nth (apply concat (repeat dirfct)) step) (get nodesmap node))))
+    )))
+
+(defn mainD8
+  []
+  (println "Day 8 - sandstorm")
+  (println d8sample1)
+  (println (d8part1 d8sample1))
+  (newline)
+  (println d8sample2)
+  (println (d8part1 d8sample2))
+  (newline)
+  (println (d8part1 (slurp "input/day8.txt")))
+  )
+
 
    (defn -main
      "I don't do a whole lot ... yet."
@@ -1379,7 +1448,8 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11")
                            :1 mainD1
                            :2 mainD2
                            :3 mainD3
-                           :4 mainD4}
+                           :4 mainD4
+                           :8 mainD8}
            this-day (keyword (first args))]
        (if (contains? available-days this-day)
          ((get available-days this-day))
