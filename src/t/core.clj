@@ -1658,7 +1658,7 @@ humidity-to-location map:
     )))))
 
 ;; I neede the prints to avoid "StackOverFlowError"
-;; because otherizise a lot of stuff is lazy : it is stored as a stack of fucntions rather than in memory
+;; because otherwise a lot of stuff is lazy : it is stored as a stack of fucntions rather than in memory
 ;; calling the prints force it out of lazy form into memory and the stack (which is relatively speaking small) is not overflowed
 ;; forcing out of lazy can also be done with (vec )
 
