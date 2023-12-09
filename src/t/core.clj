@@ -1395,7 +1395,6 @@ ZZZ = (ZZZ, ZZZ)")
 
 ;; \R is not the same as "R" but should be use when comparing letters (?)
 
-
 (defn dict-of-nodes
   [nodes]
   (apply
@@ -1576,6 +1575,49 @@ humidity-to-location map:
   (newline)
   (println (parse-input d5sample1)))
 
+
+(def d9sample1 "0 3 6 9 12 15
+1 3 6 10 15 21
+10 13 16 21 30 45")
+
+(defn get-diffs 
+  [nums max-values]
+  (if (every? zero? nums)
+    max-values
+    (get-diffs (map - (rest nums) (drop-last 1 nums)) (conj max-values (last nums)) )))
+
+(defn d9part1
+  [input]
+  (let [lines (str/split-lines input)]
+    (apply + (map (fn [l] (apply + (get-diffs (map parse-long (re-seq #"-?\d+" l)) []))) lines))))
+
+
+(defn get-diffs-part2
+  [nums max-values step-num]
+  (if (every? zero? nums)
+    max-values
+    (get-diffs-part2 (map - (rest nums) (drop-last 1 nums)) (conj max-values (if (even? step-num) (first nums) (* (first nums) -1))) (inc step-num))))
+
+(defn d9part2
+  [input]
+  (let [lines (str/split-lines input)]
+    (apply + (map (fn [l] (apply + (get-diffs-part2 (map parse-long (re-seq #"-?\d+" l)) [] 0))) lines))))
+
+(defn mainD9
+  []
+  (println "Day 9")
+  (println d9sample1)
+  (println (d9part1 d9sample1))
+  (newline)
+  #_(println (d9part1 (slurp "input/day9.txt")))
+  (println "part2")
+  (println (d9part2 d9sample1))
+  (println (d9part2 (slurp "input/day9.txt"))))
+
+;;  1861136893 wrong => was missing "-" in number detection
+
+
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
@@ -1585,7 +1627,9 @@ humidity-to-location map:
                         :3 mainD3
                         :4 mainD4
                         :5 mainD5
-                        :8 mainD8}
+                        :8 mainD8
+                        :9 mainD9}
+
         this-day (keyword (first args))]
     (if
       (contains? available-days this-day)
