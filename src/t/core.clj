@@ -1304,14 +1304,14 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11")
 (defn count-matchs
   [[win have]]
   (apply +
-    (map (fn [h] (if (nil? (some #(= h %) win)) 0 1)) have)))
+         (map (fn [h] (if (nil? (some #(= h %) win)) 0 1)) have)))
 
 (defn d4part1
   [input]
   (let [lines (str/split-lines input)]
     (apply +
-      (map (fn [l] (let [[win have] (str/split (last (str/split l #"\:")) #"\|")]
-                     (cardvalue 0 (count-matchs (vector (re-seq #"\d+" win) (re-seq #"\d+" have)))))) lines))))
+           (map (fn [l] (let [[win have] (str/split (last (str/split l #"\:")) #"\|")]
+                          (cardvalue 0 (count-matchs (vector (re-seq #"\d+" win) (re-seq #"\d+" have)))))) lines))))
 
 (defn get-card-values
   [line]
@@ -1323,32 +1323,31 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11")
 
 (defn count-cards
   ([dict-cards]
-    (count-cards
-     0 ;; N-cards
-     (range 1 (+ (count dict-cards) 1)) ;; list-cards
-     dict-cards))
+   (count-cards
+    0 ;; N-cards
+    (range 1 (+ (count dict-cards) 1)) ;; list-cards
+    dict-cards))
   ([N-cards list-cards dict-cards]
-    (if (> (count list-cards) 0)
-       (let [card-id (apply min list-cards)
-             new-list-cards (filter #(> % card-id) list-cards)
-             n-cards (- (count list-cards) (count new-list-cards))
-             card (first (get dict-cards card-id))
-             N-matchs (count-matchs (vector (:win card) (:have card)))
-             ]
+   (if (> (count list-cards) 0)
+     (let [card-id (apply min list-cards)
+           new-list-cards (filter #(> % card-id) list-cards)
+           n-cards (- (count list-cards) (count new-list-cards))
+           card (first (get dict-cards card-id))
+           N-matchs (count-matchs (vector (:win card) (:have card)))]
 
-          (println card-id n-cards 
+       (println card-id n-cards
                 ;;    card N-matchs
                 ;; (concat 
                 ;;   (apply concat (repeat n-cards (filter #(<= % (count dict-cards)) (range (+ 1 card-id) (+ 1 card-id N-matchs)))))
                 ;;   new-list-cards))
-          )
-          (count-cards
-            (+ N-cards n-cards)
-            (concat
-              (apply concat (repeat n-cards (filter #(<= % (count dict-cards)) (range (+ 1 card-id) (+ 1 card-id N-matchs)))))
-              new-list-cards)
-            dict-cards))
-       N-cards)))
+                )
+       (count-cards
+        (+ N-cards n-cards)
+        (concat
+         (apply concat (repeat n-cards (filter #(<= % (count dict-cards)) (range (+ 1 card-id) (+ 1 card-id N-matchs)))))
+         new-list-cards)
+        dict-cards))
+     N-cards)))
 
 ;; could have try to use SWAP! to keep track of the number of each cards
 ;; nope ! seems swap is more complexe than that or you need to work with atoms
@@ -1395,7 +1394,6 @@ ZZZ = (ZZZ, ZZZ)")
                  :else (println "\ta letter is not L or R!"))) dir))
 
 ;; \R is not the same as "R" but should be use when comparing letters (?)
-
 
 (defn dict-of-nodes
   [nodes]
@@ -1616,7 +1614,9 @@ humidity-to-location map:
   (println (d9part2 d9sample1))
   (println (d9part2 (slurp "input/day9.txt"))))
 
-;;  1861136893 wrong
+;;  1861136893 wrong => was missing "-" in number detection
+
+
 
 (defn -main
   "I don't do a whole lot ... yet."
@@ -1629,6 +1629,7 @@ humidity-to-location map:
                         :5 mainD5
                         :8 mainD8
                         :9 mainD9}
+
         this-day (keyword (first args))]
     (if
       (contains? available-days this-day)
