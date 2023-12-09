@@ -1304,14 +1304,14 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11")
 (defn count-matchs
   [[win have]]
   (apply +
-    (map (fn [h] (if (nil? (some #(= h %) win)) 0 1)) have)))
+         (map (fn [h] (if (nil? (some #(= h %) win)) 0 1)) have)))
 
 (defn d4part1
   [input]
   (let [lines (str/split-lines input)]
     (apply +
-      (map (fn [l] (let [[win have] (str/split (last (str/split l #"\:")) #"\|")]
-                     (cardvalue 0 (count-matchs (vector (re-seq #"\d+" win) (re-seq #"\d+" have)))))) lines))))
+           (map (fn [l] (let [[win have] (str/split (last (str/split l #"\:")) #"\|")]
+                          (cardvalue 0 (count-matchs (vector (re-seq #"\d+" win) (re-seq #"\d+" have)))))) lines))))
 
 (defn get-card-values
   [line]
@@ -1323,32 +1323,31 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11")
 
 (defn count-cards
   ([dict-cards]
-    (count-cards
-     0 ;; N-cards
-     (range 1 (+ (count dict-cards) 1)) ;; list-cards
-     dict-cards))
+   (count-cards
+    0 ;; N-cards
+    (range 1 (+ (count dict-cards) 1)) ;; list-cards
+    dict-cards))
   ([N-cards list-cards dict-cards]
-    (if (> (count list-cards) 0)
-       (let [card-id (apply min list-cards)
-             new-list-cards (filter #(> % card-id) list-cards)
-             n-cards (- (count list-cards) (count new-list-cards))
-             card (first (get dict-cards card-id))
-             N-matchs (count-matchs (vector (:win card) (:have card)))
-             ]
+   (if (> (count list-cards) 0)
+     (let [card-id (apply min list-cards)
+           new-list-cards (filter #(> % card-id) list-cards)
+           n-cards (- (count list-cards) (count new-list-cards))
+           card (first (get dict-cards card-id))
+           N-matchs (count-matchs (vector (:win card) (:have card)))]
 
-          (println card-id n-cards 
+       (println card-id n-cards
                 ;;    card N-matchs
                 ;; (concat 
                 ;;   (apply concat (repeat n-cards (filter #(<= % (count dict-cards)) (range (+ 1 card-id) (+ 1 card-id N-matchs)))))
                 ;;   new-list-cards))
-          )
-          (count-cards
-            (+ N-cards n-cards)
-            (concat
-              (apply concat (repeat n-cards (filter #(<= % (count dict-cards)) (range (+ 1 card-id) (+ 1 card-id N-matchs)))))
-              new-list-cards)
-            dict-cards))
-       N-cards)))
+                )
+       (count-cards
+        (+ N-cards n-cards)
+        (concat
+         (apply concat (repeat n-cards (filter #(<= % (count dict-cards)) (range (+ 1 card-id) (+ 1 card-id N-matchs)))))
+         new-list-cards)
+        dict-cards))
+     N-cards)))
 
 ;; could have try to use SWAP! to keep track of the number of each cards
 ;; nope ! seems swap is more complexe than that or you need to work with atoms
@@ -1371,16 +1370,224 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11")
   (println (d4part2 (slurp "input/day4.txt"))))
 
 
+(def d8sample1 "RL
 
-   (defn -main
-     "I don't do a whole lot ... yet."
-     [& args]
-     (let [available-days {:0 mainD0
-                           :1 mainD1
-                           :2 mainD2
-                           :3 mainD3
-                           :4 mainD4}
-           this-day (keyword (first args))]
-       (if (contains? available-days this-day)
-         ((get available-days this-day))
-         ((last (last available-days))))))
+AAA = (BBB, CCC)
+BBB = (DDD, EEE)
+CCC = (ZZZ, GGG)
+DDD = (DDD, DDD)
+EEE = (EEE, EEE)
+GGG = (GGG, GGG)
+ZZZ = (ZZZ, ZZZ)")
+
+(def d8sample2 "LLR
+
+AAA = (BBB, BBB)
+BBB = (AAA, ZZZ)
+ZZZ = (ZZZ, ZZZ)")
+
+(defn dir->fct
+  [dir]
+  (map (fn [d] (cond
+                 (= d \R) last
+                 (= d \L) first
+                 :else (println "\ta letter is not L or R!"))) dir))
+
+;; \R is not the same as "R" but should be use when comparing letters (?)
+
+
+(defn dict-of-nodes
+  [nodes]
+  (apply
+   sorted-map
+   (mapcat
+    (fn [l] (let [[k v] (str/split l #" = ")]
+              [k (re-seq #"\w{3}" v)]))
+    (str/split-lines nodes))))
+;; this gives a map from nodes to nodes. the keys of the maps are 'symbol' (not 'keyword')
+;;      might need to use (keyword XXX) to access the values
+
+(defn d8part1
+  [input]
+  (let [[dir nodes] (str/split input #"\n\n")
+        dirfct (dir->fct dir)
+        nodesmap (dict-of-nodes nodes)]
+    (newline)
+    (println (first dir))
+    (loop
+     [step 0 node "AAA"]
+      (when (= (mod step 1000) 0)
+        (newline)
+        (println step "," node "-->" (get nodesmap node))
+        (println "               " ((nth (apply concat (repeat dirfct)) step) ["L" "R"])))
+      (if (= node "ZZZ")
+        step
+        (recur (inc step) ((nth (apply concat (repeat dirfct)) step) (get nodesmap node)))))))
+
+
+(def d8sample3 "LR
+
+11A = (11B, XXX)
+11B = (XXX, 11Z)
+11Z = (11B, XXX)
+22A = (22B, XXX)
+22B = (22C, 22C)
+22C = (22Z, 22Z)
+22Z = (22B, 22B)
+XXX = (XXX, XXX)
+")
+
+(defn d8part2bruteforce
+  [input]
+  (let [[dir nodes] (str/split input #"\n\n")
+        dirfct (dir->fct dir)
+        nodesmap (dict-of-nodes nodes)
+        startnodes (filter #(= \A (last %)) (keys nodesmap))
+        ;; endnodes (filter #(= \Z (last %)) (keys nodesmap))
+        ]
+    (loop
+      [step 0 nodes startnodes]
+      (when (= (mod step 1000) 0)
+        (newline)
+        (println step "," nodes))
+      (if (every? #(= \Z (last %)) nodes)
+          step
+          (recur (inc step) (map (fn [node] ((nth dirfct (mod step (count dirfct))) (get nodesmap node))) nodes))))
+  ))
+
+
+(defn path-to-next-Z
+  [node tot-steps nodesmap dirfct]
+  (loop [step 0 n node]
+    (if (and (> step 0) (= \Z (last n)))
+      [n step]
+      (recur (inc step) ((nth dirfct (mod (+ step tot-steps) (count dirfct))) (get nodesmap n))))))
+
+
+;; Taken from here : https://rosettacode.org/wiki/Least_common_multiple
+(defn gcd
+  [a b]
+  (if (zero? b)
+    a
+    (recur b, (mod a b))))
+
+(defn lcm
+  [a b]
+  (/ (* a b) (gcd a b)))
+;; to calculate the lcm for a variable number of arguments
+(defn lcmv [& v] (reduce lcm v))
+
+
+(defn d8part2
+  [input]
+  (let [[dir nodes] (str/split input #"\n\n")
+        dirfct (dir->fct dir)
+        nodesmap (dict-of-nodes nodes)
+        startnodes (filter #(= \A (last %)) (keys nodesmap))
+        ;; endnodes (filter #(= \Z (last %)) (keys nodesmap))
+        Ndir (count dirfct)
+        ;; one-node (nth startnodes 3)
+        ]
+    (apply lcmv (for [one-node startnodes]
+    ;; (println one-node "-" 0 "-" 0)
+      (loop
+        [iter 0
+         node one-node 
+         tot-steps 0
+         all-paths {}]
+        (let [[new-node add-steps] (path-to-next-Z node tot-steps nodesmap dirfct)
+              new-tot-steps (+ tot-steps add-steps)]
+          (println new-node "-" (mod new-tot-steps Ndir) "-" new-tot-steps)
+          (cond
+            (> iter 10) (println "too many iter")
+            (and (= node new-node) (= (mod new-tot-steps Ndir) (mod tot-steps Ndir))) add-steps #_(println "min:" tot-steps "- step:" add-steps)
+            :else (recur (inc iter) new-node new-tot-steps all-paths))))))))
+
+
+(defn mainD8
+    []
+    (println "Day 8 - sandstorm")
+  ;; (println d8sample1)
+  ;; (println (d8part1 d8sample1))
+  ;; (newline)
+  ;; (println d8sample2)
+  ;; (println (d8part1 d8sample2))
+  ;; (newline)
+  ;; (println (d8part1 (slurp "input/day8.txt")))
+    (newline)
+    (println "part 2 - multi time-space ghost walking")
+    ;; (println d8sample3)
+    ;; (println (d8part2 d8sample3))
+    (newline)
+    (println (d8part2 (slurp "input/day8.txt"))))
+
+
+(def d5sample1
+  "seeds: 79 14 55 13
+
+seed-to-soil map:
+50 98 2
+52 50 48
+
+soil-to-fertilizer map:
+0 15 37
+37 52 2
+39 0 15
+
+fertilizer-to-water map:
+49 53 8
+0 11 42
+42 0 7
+57 7 4
+
+water-to-light map:
+88 18 7
+18 25 70
+
+light-to-temperature map:
+45 77 23
+81 45 19
+68 64 13
+
+temperature-to-humidity map:
+0 69 1
+1 0 69
+
+humidity-to-location map:
+60 56 37
+56 93 4")
+
+(defn parse-one-map
+  [[txt & nums]]
+  nums)
+
+(defn parse-input
+  [input]
+  (let [groups (str/split input #"\n\n")
+        seeds (map parse-long (re-seq #"\d+" (first groups)))]
+    (parse-one-map (str/split-lines (first (rest groups))))
+  ))
+
+(defn mainD5 
+  []
+  (println "Day 5 - from seed to soil to location")
+  (println "part 1 - closest location")
+  (println d5sample1)
+  (newline)
+  (println (parse-input d5sample1)))
+
+(defn -main
+  "I don't do a whole lot ... yet."
+  [& args]
+  (let [available-days {:0 mainD0
+                        :1 mainD1
+                        :2 mainD2
+                        :3 mainD3
+                        :4 mainD4
+                        :5 mainD5
+                        :8 mainD8}
+        this-day (keyword (first args))]
+    (if
+      (contains? available-days this-day)
+      ((get available-days this-day))
+      ((last (last available-days))))))
