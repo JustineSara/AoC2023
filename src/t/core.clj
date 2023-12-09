@@ -1558,14 +1558,110 @@ humidity-to-location map:
 
 (defn parse-one-map
   [[txt & nums]]
-  nums)
+  (let [[start end] (str/split (str/replace txt " map:" "") #"-to-")]
+    [start [end (map #(map parse-long (re-seq #"-?\d+" %)) nums)]]))
 
 (defn parse-input
   [input]
   (let [groups (str/split input #"\n\n")
         seeds (map parse-long (re-seq #"\d+" (first groups)))]
-    (parse-one-map (str/split-lines (first (rest groups))))
+    [seeds (reduce #(assoc %1 (first %2) (last %2)) {} (map #(parse-one-map (str/split-lines %)) (rest groups)))]
   ))
+
+
+(defn sold5p1-allsteps
+  [value value-name maps all-steps]
+  #_(println value value-name (get maps value-name))
+  (if (= value-name "location")
+    all-steps
+    (let [[next-value-name nums] (get maps value-name)
+          this-map (first (filter #(and (>= value (second %) ) (< (- value (second %)) (last %))) nums))]
+      (if this-map
+        (let [new-value (+ (first this-map) (- value (second this-map)))]
+          (sold5p1-allsteps new-value next-value-name maps (conj all-steps new-value)))
+        (sold5p1-allsteps value next-value-name maps (conj all-steps value))))
+  ))
+
+(defn sold5p1
+  [value value-name maps ]
+  #_(println value value-name (get maps value-name))
+  (if (= value-name "location")
+    value
+    (let [[next-value-name nums] (get maps value-name)
+          this-map (first (filter #(and (>= value (second %)) (< (- value (second %)) (last %))) nums))]
+      (if this-map
+        (let [new-value (+ (first this-map) (- value (second this-map)))]
+          (sold5p1 new-value next-value-name maps))
+        (sold5p1 value next-value-name maps)))))
+
+
+(defn d5part1
+  [input]
+  (let [[seeds maps] (parse-input input)]
+    (apply min (map #(sold5p1 % "seed" maps) seeds))))
+
+
+(defn range-transform-with-one-map
+  [this-range this-map]
+  #_(println "     " this-range  this-map)
+  (let [[start size] this-range
+        [map-start-new map-start-old map-size] this-map
+        end (+ start size -1)
+        map-end-old (+ map-start-old map-size -1)]
+      (cond
+        (< end map-start-old) [[this-range] []] ;; outside of this range
+        (> start map-end-old) [[this-range] []] ;; also outside of this range
+        (< start map-start-old) ;; it starts before the map but end in of after
+          (map conj 
+               [[] []]
+               [[start (+ map-start-old (- start))] []]
+               (let [l (range-transform-with-one-map [map-start-old (- size (+ map-start-old (- start)))] this-map)] [(first (first l)) (last (last l))]))
+        (<= end map-end-old) ;; all the range in the map
+          [[] [[(+ map-start-new (- start map-start-old)) size]]]
+        :else  ;; start in range, ends outside
+          (let [size-in-map (inc (- map-end-old start))]
+            [[[(inc map-end-old) (- size size-in-map)]] [[(+ map-start-new (- start map-start-old)) size-in-map]]])
+
+        )))
+
+(defn range-transf-for-reduce
+  [old-and-new-ranges this-map]
+  (let [old-ranges (filter #(> (count %) 0) (first old-and-new-ranges))
+        new-ranges (filter #(> (count %) 0) (second old-and-new-ranges))]
+    (println "   " old-ranges new-ranges)
+    (loop [to-do-old-ranges old-ranges
+           done-old-ranges []
+           new-ranges new-ranges]
+      (if (zero? (count to-do-old-ranges))
+        [done-old-ranges new-ranges]
+        (let [[output-old output-new] (range-transform-with-one-map (first to-do-old-ranges) this-map)]
+          (recur (rest to-do-old-ranges) (concat done-old-ranges output-old) (concat new-ranges output-new))))
+    )))
+
+
+
+(defn d5part2
+  [input]
+  (let [[seeds maps] (parse-input input)
+        seed-ranges (partition 2 seeds)]
+    (apply min (map #(first %)
+      (loop [this-ranges seed-ranges
+             this-stage "seed"]
+        (println " " this-stage this-ranges)
+        (println "  maps" (get maps this-stage))
+        (if (= this-stage "location")
+          this-ranges
+          (let [one-map (get maps this-stage)
+                next-stage (first one-map)
+                this-stage-maps (last one-map)]
+            (recur (apply concat (reduce range-transf-for-reduce [this-ranges []] this-stage-maps)) next-stage)))
+    )))))
+
+;; I neede the prints to avoid "StackOverFlowError"
+;; because otherizise a lot of stuff is lazy : it is stored as a stack of fucntions rather than in memory
+;; calling the prints force it out of lazy form into memory and the stack (which is relatively speaking small) is not overflowed
+;; forcing out of lazy can also be done with (vec )
+
 
 (defn mainD5 
   []
@@ -1573,7 +1669,17 @@ humidity-to-location map:
   (println "part 1 - closest location")
   (println d5sample1)
   (newline)
-  (println (parse-input d5sample1)))
+  (println (d5part1 d5sample1))
+  (newline)
+  #_(println (d5part1 (slurp "input/day5.txt")))
+  (println "part 2 - all the seeds because range")
+  (println (d5part2 d5sample1))
+  ;; (println (range-transform-with-one-map '(97 2) '(50 98 2)))
+  ;; (println (reduce range-transf-for-reduce [['(15 2) '(95 20)] []] ['(50 98 2) '(0 102 2)]))
+  (println (d5part2 (slurp "input/day5.txt")))
+  )
+
+
 
 
 (def d9sample1 "0 3 6 9 12 15
