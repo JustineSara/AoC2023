@@ -1702,7 +1702,9 @@ humidity-to-location map:
   [nums max-values step-num]
   (if (every? zero? nums)
     max-values
-    (get-diffs-part2 (map - (rest nums) (drop-last 1 nums)) (conj max-values (if (even? step-num) (first nums) (* (first nums) -1))) (inc step-num))))
+    (get-diffs-part2 (map - (rest nums) (drop-last 1 nums))
+                     (conj max-values (if (even? step-num) (first nums) (* (first nums) -1)))
+                     (inc step-num))))
 
 (defn d9part2
   [input]
