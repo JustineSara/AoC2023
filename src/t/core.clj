@@ -1946,6 +1946,33 @@ L7JLJL-JLJLJL--JLJ.L")
 
 
 
+(def d7sample1 "32T3K 765
+T55J5 684
+KK677 28
+KTJJT 220
+QQQJA 483
+")
+
+
+(defn make-hand
+  [[cards bid]]
+  (map (fn [c] (count (re-seq c cards))) cards)
+  )
+
+(defn d7part1
+  [input]
+  (let [lines (str/split-lines input)]
+    lines))
+
+(defn mainD7
+  []
+  (println "Day 7")
+  (println d7sample1)
+  (println (d7part1 d7sample1)))
+
+;;(slurp "input/day10.txt")
+
+
 (def d11sample1 "")
 
 (defn d11part1
@@ -1959,6 +1986,8 @@ L7JLJL-JLJLJL--JLJ.L")
   (println d11sample1)
   (println (d11part1 d11sample1)))
 
+;; (slurp "input/day10.txt")
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
@@ -1968,12 +1997,13 @@ L7JLJL-JLJLJL--JLJ.L")
                         3 mainD3
                         4 mainD4
                         5 mainD5
+                        7 mainD7
                         8 mainD8
                         9 mainD9
                         10 mainD10
                         11 mainD11}
 
-        this-day (parse-long (first args))]
+        this-day (if args (parse-long (first args)) (apply max (keys available-days)))]
     (if
       (contains? available-days this-day)
       ((get available-days this-day))
