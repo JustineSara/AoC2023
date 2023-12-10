@@ -1,7 +1,8 @@
 (ns t.core
   (:gen-class)
   (:require
-   [clojure.string :as str]))
+    [clojure.string :as str]
+    [clojure.set :as cljset]))
 
 
 
@@ -1724,22 +1725,256 @@ humidity-to-location map:
 
 ;;  1861136893 wrong => was missing "-" in number detection
 
+(def d10sample1
+  "-L|F7
+7S-7|
+L|7||
+-L-J|
+L|-JF")
 
+(def day10sample2
+"7-F7-
+.FJ|7
+SJLL7
+|F--J
+LJ.LJ")
+
+(defn d10-parse-lines
+  [lines]
+  (map-indexed (fn [y l] (map-indexed (fn [x c] [x y c]) l)) lines))
+
+(defn connected-tiles
+  [[x y s]]
+  (cond
+    (= s \|) [[x (inc y)] [x (dec y)]]
+    (= s \-) [[(inc x) y] [(dec x) y]]
+    (= s \L) [[x (dec y)] [(inc x)  y]]
+    (= s \J) [[x (dec y)] [(dec x) y]]
+    (= s \7) [[(dec x) y] [x (inc y)]]
+    (= s \F) [[(inc x) y] [x (inc y)]]
+  ))
+
+
+(defn get-tile
+  [[x y] all-points]
+  (first (filter #(= [x y] [(first %) (second %)]) all-points)))
+
+(defn around-S
+  [all-points]
+  (let [[xs ys _] (first (filter #(= \S (last %)) all-points))
+        options (map (fn [pos] (get-tile pos all-points)) [[xs (inc ys)] [xs (dec ys)] [(inc xs) ys] [(dec xs) ys]])
+        connected (map connected-tiles options)
+        ]
+    (map 
+      first 
+      (filter 
+        (fn [[_ c]] (some true? c))
+        (map (fn [o c] [o (map #(= % [xs ys]) c)]) options connected)))))
+
+(defn get-next-tile
+  [[xp yp _] tile all-points]
+  (let [[c1 c2] (connected-tiles tile)]
+    (cond
+      (= c1 [xp yp]) (get-tile c2 all-points)
+      (= c2 [xp yp]) (get-tile c1 all-points)))
+  )
+
+(defn d10p1steps
+  [step prevtiles tiles all-points]
+  (let [[p1 p2] prevtiles
+        [t1 t2] tiles]
+    (when (= 0 (mod step 1000)) (prn step tiles))
+    (if
+      (or (= t1 t2) (= p1 t1) (= p1 t2) (= p2 t1) (= p2 t2))
+      step
+      (recur (inc step) tiles [(get-next-tile p1 t1 all-points) (get-next-tile p2 t2 all-points)] all-points))))
+
+(defn d10part1
+  [input]
+  (let [lines (str/split-lines input)
+        all-points (apply concat (d10-parse-lines lines))
+        S (first (filter #(= \S (last %)) all-points))
+        S-connected-tiles (around-S all-points)]
+    #_(prn all-points)
+    (prn S)
+    (prn S-connected-tiles)
+    (d10p1steps 1 [S S] S-connected-tiles all-points)))
+
+(def d10sample3 "...........
+.S-------7.
+.|F-----7|.
+.||.....||.
+.||.....||.
+.|L-7.F-J|.
+.|..|.|..|.
+.L--J.L--J.
+...........
+")
+
+;; only left going pipe can be at the right of S
+(defn S-is-actually
+  [[xs ys _] [x1 y1 _] [x2 y2 _]]
+  (let [cand-right (when (or (= [x1 y1] [(inc xs) ys]) (= [x2 y2] [(inc xs) ys])) (set [\- \L \F]))
+        cand-top (when (or (= [x1 y1] [xs (dec ys)]) (= [x2 y2] [xs (dec ys)])) (set [\| \L \J]))
+        cand-left (when (or (= [x1 y1] [(dec xs) ys]) (= [x2 y2] [(dec xs) ys])) (set [\- \J \7]))
+        cand-bot (when (or (= [x1 y1] [xs (inc ys)]) (= [x2 y2] [xs (inc ys)])) (set [\| \7 \F]))
+        ]
+    (first (apply clojure.set/intersection (keep  identity [cand-right cand-top cand-left cand-bot])))
+))
+
+(defn d10findloop
+  [prevtile tile all-tiles S all-points]
+  (let [next-tile (get-next-tile prevtile tile all-points)]
+    (when (= 0 (mod (count all-tiles) 1000)) (prn (count all-tiles) tile))
+    (if
+      (= next-tile S)
+      all-tiles
+      (recur tile next-tile (conj all-tiles next-tile) S all-points))))
+
+
+(defn all-inside-candidate-col
+  [[list-candidates open previous-y] [x y s]]
+  (prn y list-candidates open previous-y s)
+  (cond
+    (= s \|) [list-candidates open y]
+    (or (= s \L) (= s \J)) [list-candidates true y]
+    (or (= s \F) (= s \7)) (if open [(concat list-candidates (map #(vector % x) (range (inc previous-y) y))) false y] [list-candidates false y])
+    (= s \-) (if open [(concat list-candidates (map #(vector x %) (range (inc previous-y) y))) false y] [list-candidates true y])
+    ))
+
+#_(defn all-inside-candidate-lig
+  [[list-candidates open previous-x previous-s] [x y s]]
+  ;; (prn y list-candidates open previous-y s)
+  (if 
+    open
+    (cond
+      (= s \-) [list-candidates open x previous-s] ;; I need  to propagate the information about how I "open" the first time
+      (= s \|) [(concat list-candidates (map #(vector % y) (range (inc previous-x) x))) false x s]
+      (or (= s \F) (= s \L)) [(concat list-candidates (map #(vector % y) (range (inc previous-x) x))) true x s]
+      )
+    (cond
+      (= s \-) [list-candidates open x previous-s]
+      (= s \|) [list-candidates true x s]
+      (or (= s \F) (= s \L) (= s \|)) [list-candidates true x s]
+      (= s \J) []
+      (or (= s \7) ) [list-candidates true x]
+       (if open [(concat list-candidates (map #(vector % x) (range (inc previous-y) y))) false y] [list-candidates false y])
+      (= s \|) (if open [(concat list-candidates (map #(vector % y) (range (inc previous-x) x))) false x] [list-candidates true x]))))
+
+(defn transform-path-y
+  [path-y clean-path-y]
+  (if
+    (= (count path-y) 0)
+    clean-path-y
+    (let [[x1 _ s1] (first path-y)
+          path-y (rest path-y)]
+      (if
+        (= s1 \|)
+        (recur path-y (conj clean-path-y [s1 x1 x1]))
+        (let [[x2 _ s2] (first path-y)
+              path-y (rest path-y)]
+          (if
+            (or (and (= s1 \L) (= s2 \J)) (and (= s1 \F) (= s2 \7)))
+            (recur path-y clean-path-y)
+            (recur path-y (conj clean-path-y [(str s1 s2) x1 x2]))
+            ))
+      )
+      ))
+  )
+
+(defn xy-inside
+  [y elems]
+  (if 
+    (zero? (count elems))
+    []
+    (let [eles (partition 2 (sort-by second elems))]
+      (map (fn [x] [x y]) (mapcat (fn [[[_ start _][_ _ end]]] (range (inc start) end)) eles)))
+    ))
+
+(defn d10part2
+  [input]
+  (let [lines (str/split-lines input)
+        all-points (apply concat (d10-parse-lines lines))
+        S (first (filter #(= \S (last %)) all-points))
+        S-connected-tiles (around-S all-points)
+        s-symb (S-is-actually S (first S-connected-tiles) (second S-connected-tiles))
+        all-points (map (fn [[x y s]] [x y (if (= s \S) s-symb s)]) all-points)
+        S [(first S) (second S) s-symb]
+        all-path-points (d10findloop S (first S-connected-tiles) [S (first S-connected-tiles)] S all-points)
+        ;; path-by-y (group-by second (d10findloop S (first S-connected-tiles) [S (first S-connected-tiles)] S all-points))
+        transformed-paths (apply sorted-map (mapcat (fn [[k v]] [k (transform-path-y (sort-by first (filter #(not= (last %) \-) v)) [])]) (group-by second all-path-points)))
+        candidates (set (mapcat (fn [[k v]] (xy-inside k v)) transformed-paths))]
+    (prn S)
+    ;; (prn all-path-points)
+    ;; ;; (prn (sort-by first (map (fn [[k v]] [k (reduce count-inside [0 false -1] (sort-by second v))]) path)))
+    ;; ;; (prn transformed-paths)
+    ;; ;; (prn (xy-inside 6 (get transformed-paths 6) ))
+    ;; (prn candidates)
+    ;; (prn (reduce count-inside [0 false -1] (sort-by second (get path 16))))
+    ;; (apply + (map (fn [[_ v]] (first (reduce count-inside [0 false -1] (sort-by second v)))) path))
+    (count (cljset/difference candidates (set (map (fn [[x y _]] [x y]) all-path-points))))
+  ))
+
+(def d10sample4
+  "FF7FSF7F7F7F7F7F---7
+L|LJ||||||||||||F--J
+FL-7LJLJ||||||LJL-77
+F--JF--7||LJLJ7F7FJ-
+L---JF-JLJ.||-FJLJJ7
+|F|F-JF---7F7-L7L|7|
+|FFJF7L7F-JF7|JL---7
+7-L-JL7||F7|L7F-7F7|
+L.L7LFJ|||||FJL7||LJ
+L7JLJL-JLJLJL--JLJ.L")
+
+(defn mainD10
+  []
+  (println "Day 10")
+  ;; (println d10sample1)
+  ;; (println (d10part1 d10sample1))
+  ;; (newline)
+  ;; (println (d10part1 day10sample2))
+  ;; (newline)
+  ;; (println (d10part1 (slurp "input/day10.txt")))
+  (println "part2")
+  (println d10sample3)
+  (prn (d10part2 d10sample3))
+  (println d10sample4)
+  (prn (d10part2 d10sample4))
+  (newline)
+  (println (d10part2 (slurp "input/day10.txt"))))
+
+
+
+(def d11sample1 "")
+
+(defn d11part1
+  [input]
+  (let [lines (str/split-lines input)]
+    lines))
+
+(defn mainD11
+  []
+  (println "Day 11")
+  (println d11sample1)
+  (println (d11part1 d11sample1)))
 
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (let [available-days {:0 mainD0
-                        :1 mainD1
-                        :2 mainD2
-                        :3 mainD3
-                        :4 mainD4
-                        :5 mainD5
-                        :8 mainD8
-                        :9 mainD9}
+  (let [available-days {0 mainD0
+                        1 mainD1
+                        2 mainD2
+                        3 mainD3
+                        4 mainD4
+                        5 mainD5
+                        8 mainD8
+                        9 mainD9
+                        10 mainD10
+                        11 mainD11}
 
-        this-day (keyword (first args))]
+        this-day (parse-long (first args))]
     (if
       (contains? available-days this-day)
       ((get available-days this-day))
-      ((last (last available-days))))))
+      ((get available-days (apply max (keys available-days)))))))
