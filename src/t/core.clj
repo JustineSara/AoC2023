@@ -1973,20 +1973,98 @@ QQQJA 483
 ;;(slurp "input/day10.txt")
 
 
-(def d11sample1 "")
+(def d11sample1 "...#......
+.......#..
+#.........
+..........
+......#...
+.#........
+.........#
+..........
+.......#..
+#...#.....")
+
+
+(defn get-galaxies
+  [il l]
+  (keep identity (map-indexed (fn [ic c] (when (= c \#) [ic il])) l)))
+
+(defn  expand-univers
+  [galaxies]
+  (let [xs (cljset/difference (set (range (apply max (map first galaxies)))) (set (map first galaxies)))
+        ys (cljset/difference (set (range (apply max (map second galaxies)))) (set (map second galaxies)))]
+    #_(prn xs)
+    #_(prn ys)
+    (loop [g galaxies g-expanded []]
+      (if (zero? (count g))
+        g-expanded
+        (let [[gx gy] (first g)
+              Nx (count (filter #(< % gx) xs))
+              Ny (count (filter #(< % gy) ys))] 
+           (recur (rest g) (conj g-expanded [(+ gx Nx) (+ gy Ny)]))))
+    )))
+
+(defn manhattan-dist
+  [[x1 y1] [x2 y2]]
+  (+ (abs (- x1 x2)) (abs (- y1 y2))))
+
+
+(defn get-dist
+  [[dist galaxies] g]
+  (if (zero? (count galaxies))
+    [dist []]
+    [(+ dist (apply + (map #(manhattan-dist g %) galaxies)))
+     (rest galaxies)]))
 
 (defn d11part1
   [input]
-  (let [lines (str/split-lines input)]
-    lines))
+  (let [lines (str/split-lines input)
+        galaxies (expand-univers (apply concat (map-indexed get-galaxies lines)))]
+    #_(prn (sort-by second galaxies))
+    (first (reduce get-dist [0 (rest galaxies)] galaxies))
+    ))
+
+
+(defn expand-univers-multi
+  [galaxies multi]
+  (let [xs (cljset/difference (set (range (apply max (map first galaxies)))) (set (map first galaxies)))
+       ys (cljset/difference (set (range (apply max (map second galaxies)))) (set (map second galaxies)))]
+   #_(prn xs)
+   #_(prn ys)
+   (loop [g galaxies g-expanded []]
+     (if (zero? (count g))
+       g-expanded
+       (let [[gx gy] (first g)
+             Nx (count (filter #(< % gx) xs))
+             Ny (count (filter #(< % gy) ys))]
+         (recur (rest g) (conj g-expanded [(+ gx (* Nx multi) (- Nx)) (+ gy (* Ny multi) (- Ny))])))))))
+
+(defn d11part2
+  [input multi]
+  (let [lines (str/split-lines input)
+        galaxies (apply concat (map-indexed get-galaxies lines))
+        exp-g (expand-univers-multi galaxies multi)]
+    ;; (prn (sort-by second galaxies))
+    ;; (prn (sort-by second (expand-univers galaxies)))
+    ;; (prn (sort-by second exp-g))
+    (first (reduce get-dist [0 (rest exp-g)] exp-g))
+  ))
+
+;; 678626878012 too high
+
 
 (defn mainD11
   []
   (println "Day 11")
   (println d11sample1)
-  (println (d11part1 d11sample1)))
+  (println (d11part1 d11sample1))
+  #_(println (d11part1  (slurp "input/day11.txt")))
+  (println "part 2")
+  (println (d11part2 d11sample1 10))
+  (println (d11part2 d11sample1 100))
+  (println (d11part2 (slurp "input/day11.txt") 1000000)))
 
-;; (slurp "input/day10.txt")
+
 
 (defn -main
   "I don't do a whole lot ... yet."
