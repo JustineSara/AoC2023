@@ -1954,21 +1954,92 @@ QQQJA 483
 ")
 
 
+(defn hand-type
+  [cards]
+  (let [cards-nums (sort > (map (fn [[_ v]] (count v)) (group-by identity cards)))
+        max-cn (first cards-nums)
+        sec-max-cn (second cards-nums)]
+    (cond
+      (= max-cn 5) 6
+      (= max-cn 4) 5
+      (= max-cn 3) (if (= sec-max-cn 2) 4 3)
+      (= max-cn 2) (if (= sec-max-cn 2) 2 1)
+      :else 0
+    )))
+
 (defn make-hand
-  [[cards bid]]
-  (map (fn [c] (count (re-seq c cards))) cards)
-  )
+  [line]
+  (let [[cards bid] (str/split line #" ")
+        bid (parse-long bid)]
+    {:cards cards
+     :bid bid
+     :type (hand-type cards)}))
+
+;; lesson : convention is to go from smaller to higher rather than what I did ... oups
+
+(defn x-higher-cards-than-y
+  ;; A K Q J T 9 8 7 6 5 4 3 2
+  ([x]
+    true)
+  ([x y]
+    (cond
+      (= x y) true
+      (= x \A) true
+      (= y \A) false
+      (= x \K) true
+      (= y \K) false
+      (= x \Q) true
+      (= y \Q) false
+      (= x \J) true
+      (= y \J) false
+      (= x \T) true
+      (= y \T) false
+      :else (let [x (parse-long (str x)) y (parse-long (str y))] (> x y))
+      ))
+  ([x y & more]
+    (let [all (concat [x y] more)]
+      (every? true? (map #(x-higher-cards-than-y (first %) (second %)) (partition 2 1 all)))
+    )
+   ))
+
+(defn x-higher-cardhand-than-y
+  ([x] true)
+  ([x y]
+    (first (filter boolean? (map (fn [c1 c2] (if (= c1 c2) nil (x-higher-cards-than-y c1 c2))) x y))))
+  ([x y & more]
+    (let [all (concat [x y] more)]
+      (every? true? (map #(x-higher-cardhand-than-y (first %) (second %)) (partition 2 1 all))))))
+
+(defn x-higher-hand-than-y
+  ([x] true)
+  ([x y]
+    (cond 
+      (> (get x :type) (get y :type)) true
+      (< (get x :type) (get y :type)) false
+      :else (x-higher-cardhand-than-y (get x :cards) (get y :cards))))
+  ([x y & more]
+    (let [all (concat [x y] more)]
+      (every? true? (map #(x-higher-hand-than-y (first %) (second %)) (partition 2 1 all))))))
 
 (defn d7part1
   [input]
   (let [lines (str/split-lines input)]
-    lines))
+    #_(prn (make-hand (first lines)))
+    #_(prn (make-hand (second lines)))
+    #_(prn (x-higher-cards-than-y \K \Q))
+    #_(prn (x-higher-cards-than-y \K \A))
+    #_(prn (sort x-higher-cards-than-y [\K \Q \A \J \3 \2 \K \T] ))
+    #_(prn (sort x-higher-cardhand-than-y (map (fn [line] (first (str/split line #" "))) lines)))
+    #_(map (fn [h r] (assoc h :rank r)) (reverse (sort x-higher-hand-than-y (map make-hand lines))) (range 1 (inc (count lines))))
+    (apply + (map (fn [h r] (* r (get h :bid))) (reverse (sort x-higher-hand-than-y (map make-hand lines))) (range 1 (inc (count lines)))))
+    ))
 
 (defn mainD7
   []
   (println "Day 7")
   (println d7sample1)
-  (println (d7part1 d7sample1)))
+  (prn (d7part1 d7sample1))
+  (prn (d7part1 (slurp "input/day7.txt"))))
 
 ;;(slurp "input/day10.txt")
 
