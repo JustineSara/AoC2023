@@ -2034,12 +2034,86 @@ QQQJA 483
     (apply + (map (fn [h r] (* r (get h :bid))) (reverse (sort x-higher-hand-than-y (map make-hand lines))) (range 1 (inc (count lines)))))
     ))
 
+(defn hand-type-v2
+  [cards] 
+  (let [cards-dict (into {} (map (fn [[k v]] [k (count v)]) (group-by identity cards)))
+        J-num (get cards-dict \J 0)
+        cards-nums (sort > (map (fn [[_ v]] v) (dissoc cards-dict \J)))
+        max-cn (if (= J-num 5) 5 (+ J-num (first cards-nums)))
+        sec-max-cn (second cards-nums)]
+    (cond
+      (= max-cn 5) 6
+      (= max-cn 4) 5
+      (= max-cn 3) (if (= sec-max-cn 2) 4 3)
+      (= max-cn 2) (if (= sec-max-cn 2) 2 1)
+      :else 0)))
+
+(defn make-hand-v2
+  [line]
+  (let [[cards bid] (str/split line #" ")
+        bid (parse-long bid)]
+    {:cards cards
+     :bid bid
+     :type (hand-type-v2 cards)}))
+
+(defn h-cards-v2
+  ;; A K Q T 9 8 7 6 5 4 3 2 J
+  ([x]
+   true)
+  ([x y]
+   (let [x (if (= x \J) \0 x)
+         y (if (= y \J) \0 y) ]
+     (cond
+       (= x y) true
+       (= x \A) true
+       (= y \A) false
+       (= x \K) true
+       (= y \K) false
+       (= x \Q) true
+       (= y \Q) false
+       (= x \T) true
+       (= y \T) false
+       :else (let [x (parse-long (str x)) y (parse-long (str y))] (> x y)))))
+  ([x y & more]
+   (let [all (concat [x y] more)]
+     (every? true? (map #(h-cards-v2 (first %) (second %)) (partition 2 1 all))))))
+
+(defn h-cardhand-v2
+  ([x] true)
+  ([x y]
+   (first (filter boolean? (map (fn [c1 c2] (if (= c1 c2) nil (h-cards-v2 c1 c2))) x y))))
+  ([x y & more]
+   (let [all (concat [x y] more)]
+     (every? true? (map #(h-cardhand-v2 (first %) (second %)) (partition 2 1 all))))))
+
+(defn h-hand-v2
+  ([x] true)
+  ([x y]
+   (cond
+     (> (get x :type) (get y :type)) true
+     (< (get x :type) (get y :type)) false
+     :else (h-cardhand-v2 (get x :cards) (get y :cards))))
+  ([x y & more]
+   (let [all (concat [x y] more)]
+     (every? true? (map #(h-hand-v2 (first %) (second %)) (partition 2 1 all))))))
+
+(defn d7part2
+  [input]
+  (let [lines (str/split-lines input)]
+    ;; (map (fn [h r] (assoc h :rank r)) (reverse (sort h-hand-v2 (map make-hand-v2 lines))) (range 1 (inc (count lines))))
+    (apply + (map (fn [h r] (* (get h :bid) r)) (reverse (sort h-hand-v2 (map make-hand-v2 lines))) (range 1 (inc (count lines)))))
+    ))
+
 (defn mainD7
   []
   (println "Day 7")
   (println d7sample1)
-  (prn (d7part1 d7sample1))
-  (prn (d7part1 (slurp "input/day7.txt"))))
+  ;; (prn (d7part1 d7sample1))
+  ;; (prn (d7part1 (slurp "input/day7.txt")))
+  (println "part 2")
+  (prn (d7part2 d7sample1))
+  (prn (d7part2 (slurp "input/day7.txt")))
+  )
 
 ;;(slurp "input/day10.txt")
 
