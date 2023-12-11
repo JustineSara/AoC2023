@@ -2211,6 +2211,25 @@ QQQJA 483
 
 
 
+(def d12sample1 "")
+
+(defn d12part1
+  [input]
+  (let [lines (str/split-lines input)]
+    lines))
+
+(defn mainD12
+  []
+  (println "Day 12")
+  (prn (d12part1 d12sample1))
+  (prn (d12part1 (slurp "input/day12.txt")))
+  ;; (newline)
+  ;; (println "part 2")
+  ;; (prn (d12part2 d12sample1))
+  ;; (prn (d12part2 (slurp "input/day12.txt")))
+  )
+
+
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
@@ -2224,7 +2243,8 @@ QQQJA 483
                         8 mainD8
                         9 mainD9
                         10 mainD10
-                        11 mainD11}
+                        11 mainD11
+                        12 mainD12}
 
         this-day (if args (parse-long (first args)) (apply max (keys available-days)))]
     (if
