@@ -190,11 +190,11 @@ O.#..O.#.#
 (defn d14
   [input]
   (let [[[maxX maxY] map-rocks] (parse-input input)]
-    (->>
+    (->
      map-rocks
      roll-North
-     (#(get % \O))
-     (North-load maxY))))
+     (get \O)
+     (->> (North-load maxY)))))
 
 
 (defn -main
