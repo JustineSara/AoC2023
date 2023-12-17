@@ -59,19 +59,71 @@
   )
   )
 
+(defn manhatan_dist 
+  [[x1 y1] [x2 y2]]
+  (+ (abs (- x1 x2)) (abs (- y1 y2))))
+
+
+(defn compare-paths
+  [[h1 p1 _] [h2 p2 _] final-pos]
+  (if (= p1 p2)
+    (< h1 h2)
+    (< (manhatan_dist p1 final-pos) (manhatan_dist p2 final-pos)))
+  )
+
+(defn step-equal-paths
+  [list-eq-paths heatmap seen]
+  (let [newp (->>
+              list-eq-paths
+              (mapcat #(next6paths % heatmap))
+              (sort-by first))]
+    (loop [paths newp
+           s seen
+           res []]
+      (if (zero? (count paths))
+        [res s]
+        (let [[p & paths] paths
+              [h [x y] d] p]
+          (if (contains? seen [x y d])
+            (recur paths s res)
+            (recur paths (conj s [x y d]) (conj res p) )))
+        )
+      )
+  )
+  )
+
 (defn steps
   [list-paths heatmap final-pos]
-  (loop [lp list-paths c 0]
-    (let [[path & lp] (sort-by first lp)
+  ;; path = [heat [x y] d]
+  ;; seen = [ [x y d] ]
+  (loop [lp list-paths 
+         c 0 
+         seen (set (map (fn [[h [x y] d]] [x y d]) list-paths))] 
+        ;;  seen (into {} (map (fn [[h [x y] d]] [[x y d] h]) list-paths))] 
+         
+    ;; best-path ##Inf]
+    (let [lp (sort-by first lp)
+          path (first lp)
         ;;   _ (println " " path)
           ]
       (when (zero? (mod c 100)) (println "  " path " - " (count lp)) )
       (if (= (second path) final-pos)
         (first path)
-        (recur (concat (next6paths path heatmap) lp) (inc c))
-        )
+        (let [ 
+              [l-equal-paths lp] (split-with #(= (first %) (first path)) lp)
+              _ (prn l-equal-paths)
+              [newpaths newseen] (step-equal-paths l-equal-paths heatmap seen)
+            ;;   newpath (->
+            ;;             path
+            ;;             (next6paths heatmap)
+            ;;             (->> (filter (fn [[_ [x y] d]] (not (contains? seen [x y d]))) )))
+              ]
+        ;;  (recur (concat newpath lp) (inc c) (apply conj seen (map (fn [[_ [x y] d]] [x y d]) newpath)))
+        ;;  (recur (concat newpath lp) (inc c) (reduce #(assoc %1 (first %2) (second %2)) seen (map (fn [[h [x y] d]] [[x y d] h]) newpath)))
+          (recur (concat newpaths lp) (inc c) newseen)
+          )
       )
-  ))
+  )))
 
 (defn d17
   [input]
@@ -82,6 +134,7 @@
     (println "part1")
     (println "  map of heat is" (inc maxX) "x" (inc maxY))
     (steps [[0 [0 0] "v"][0 [0 0] ">"]] heatmap final-pos)
+    
     )
   )
 
