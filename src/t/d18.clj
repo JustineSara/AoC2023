@@ -2,7 +2,8 @@
   (:gen-class)
   (:require
    [clojure.string :as cljstr]
-   [clojure.set :as cljset]))
+   [clojure.set :as cljset]
+   ))
 
 (def sample "R 6 (#70c710)
 D 5 (#0dc571)
@@ -78,6 +79,27 @@ U 6")
 (defn parse-input
   [input]
   (map (fn [l] (let [ll (cljstr/split l #" ")] [(first ll) (parse-long (second ll))])) (cljstr/split-lines input)))
+
+(defn map-dnum-to-dir
+  [dnum]
+;;   (prn dnum)
+  (case dnum
+    \0 "R"
+    \1 "D"
+    \2 "L"
+    \3 "U"
+    ))
+
+(defn parse-input-2
+  [input]
+  (->>
+   input
+   cljstr/split-lines
+   (map (fn [l] (second (re-find #"\(#(.*)\)" l))))
+   (map (fn [n16d] ((juxt drop-last last) n16d)))
+   (map (fn [[n16 d]] [(map-dnum-to-dir d) (Long/parseLong (apply str n16) 16)]))
+   )
+  )
 
 (defn dig-one
   [[x y] [dir nm]]
@@ -433,7 +455,7 @@ U 6")
 
 
 (defn surf-from-corners
-  [corners _]
+  [corners]
   (let [[miny & _] (sort (map second corners))
         ;; top-c (sort-by first (filter #(= (second %) miny) corners))
         ;; corners (apply disj corners top-c)
@@ -453,43 +475,53 @@ U 6")
         corners (get-corners moves)
         ;; _ (prn corners)
         ]
-    (surf-from-corners corners 0)
+    (surf-from-corners corners)
     ))
+
+(defn d18p2
+  [input]
+  (let [moves (parse-input-2 input)
+         corners (get-corners moves)
+         ]
+     (surf-from-corners corners)))
 
 (defn -main
   [& args]
   (println "day18")
-;;   (println sample)
-;;   (prn (d18 sample))
-;;   (prn (d18-p1-reviewed sample))
-;;   (prn (d18-p1-reviewed sample2))
 
-;;   (println (print-border (get-border (parse-input sample2))))
+;;   (println "part1")
+;; ;;   (println sample)
+;; ;;   (prn (d18 sample))
+;; ;;   (prn (d18-p1-reviewed sample))
+;; ;;   (prn (d18-p1-reviewed sample2))
+
+;; ;;   (println (print-border (get-border (parse-input sample2))))
   
-;;   (println "sample 6 shows why ''surfaces from squares'' don't work")
+;; ;;   (println "sample 6 shows why ''surfaces from squares'' don't work")
+;; ;;   (println (print-border (get-border (parse-input sample6))))
+;; ;;   (prn (d18-p1-reviewed sample6))
+;; ;;   (println "result should be 47 (sample 6)")
+  
+;;   (println "sample (expected result : 62)")
+;;   (println (print-border (get-border (parse-input sample))))
+;;   (prn (d18-p1-reviewed2 sample))
+;;   (prn (d18-p1-reviewed2 sample2))
+;;   (newline)
+;;   (println "sample 6 (expected result : 47)")
 ;;   (println (print-border (get-border (parse-input sample6))))
-;;   (prn (d18-p1-reviewed sample6))
-;;   (println "result should be 47 (sample 6)")
+;;   (prn (d18-p1-reviewed2 sample6))
+
+
+;;   (newline)
+;; ;;   (prn (d18 (slurp "input/day18.txt")))
+;; ;;   (prn (d18-p1-reviewed (slurp "input/day18.txt")))
+;;   (prn (d18-p1-reviewed2 (slurp "input/day18.txt")))
+
   
-  (println "sample (expected result : 62)")
-  (println (print-border (get-border (parse-input sample))))
-  (prn (d18-p1-reviewed2 sample))
-  (prn (d18-p1-reviewed2 sample2))
-  (newline)
-  (println "sample 6 (expected result : 47)")
-  (println (print-border (get-border (parse-input sample6))))
-  (prn (d18-p1-reviewed2 sample6))
-
 
   (newline)
-;;   (prn (d18 (slurp "input/day18.txt")))
-;;   (prn (d18-p1-reviewed (slurp "input/day18.txt")))
-  (prn (d18-p1-reviewed2 (slurp "input/day18.txt")))
-
-
-;;   (newline)
-;;   (prn (d18p2 sample))
-;;   (newline)
-;;   (println (d18p2 (slurp "input/day18.txt")))
+  (prn (d18p2 sample))
+  (newline)
+  (println (d18p2 (slurp "input/day18.txt")))
   )
 ;; part 1 : 73014 is too high
