@@ -105,6 +105,63 @@ case
     )
   )
 
+#_(defn combine-ind
+  [nm num-ind ht-ind]
+  (let [list-ind (map #(get num-ind %) nm)
+        tobedone [list-ind]]
+    (loop [tbd tobedone
+           N 0]
+      (if (zero? (count tbd))
+        N
+        (let [[this-step & tbd] tbd
+              [fixed_n tbfixed] (split-with #(not (coll? %)) this-step)]
+          (if (zero? (count tbfixed))
+            (recur tbd (inc N))
+            (let [[next-ind & rest-ind] tbfixed
+                  [nextnum & rest-num] next-ind]
+              (if (zero? (count rest-num))
+                ()
+                ()
+                )
+
+              )
+            )
+          ))
+      )
+    
+    )
+  )
+
+(defn select-best-split
+  [nm num-ind]
+  (let [nm-countind (map #(count (get num-ind %)) nm) 
+        least-choices (apply min nm-countind)
+        indxB  (keep identity (map-indexed (fn [i c] (when (= c least-choices) i)) nm-countind))
+        indxB (nth indxB (quot (count indxB) 2))]
+    [indxB (nth nm indxB)]
+    )
+  )
+
+(defn recur-from-bestsplit
+  [nm num-ind ht-ind min-ind max-ind]
+  (let [[idB nmB] (select-best-split nm num-ind)
+        [before [_ & after]] (split-at idB nm)
+        nmindB (filter #(<= min-ind % (+ % nmB) max-ind) (get num-ind nmB))
+        ]
+    (cond
+      (and (empty? before) (empty? after))
+      (count nmindB)
+      (empty? before)
+      (map (fn [i] (recur-from-bestsplit after num-ind ht-ind (+ i nmB 1) max-ind)) nmindB)
+      (empty? after)
+      (map (fn [i] (recur-from-bestsplit before num-ind ht-ind min-ind (dec i))) nmindB)
+      :else
+      (mapcat (fn [i] [(recur-from-bestsplit before num-ind ht-ind min-ind (dec i)) 
+                       (recur-from-bestsplit after  num-ind ht-ind (+ i nmB 1) max-ind)]) nmindB)
+      )
+    )
+  )
+
 (defn one-line-sol
   [l]
   (let [[sc nm] (parse-line l)
@@ -127,29 +184,30 @@ case
 (defn d12
   [input]
   (let [lines  (cljstr/split-lines input)
-        ;; extra-test "???.###.??? 1,1,3"
-        ;; [sc-extra nm-extra] (parse-line extra-test)
-        ;; num-ind (into {} (map (fn [n] [n (num-indices n sc-extra)]) (set nm-extra)))
-        ;; ht-ind (ht-indices sc-extra)
+        extra-test "???.###.??? 1,1,3"
+        [sc-extra nm-extra] (parse-line extra-test)
+        num-ind (into {} (map (fn [n] [n (num-indices n sc-extra)]) (set nm-extra)))
+        ht-ind (ht-indices sc-extra)
         ]
 
-    (apply 
+    #_(apply 
      + 
      (map one-line-sol lines))
 
-    ;; (newline)
-    ;; (println sc-extra)
-    ;; (println nm-extra)
-    ;; (println num-ind)
-    ;; (println ht-ind)
+    (newline)
+    (println sc-extra)
+    (println nm-extra)
+    (println num-ind)
+    (println ht-ind)
+    (println (recur-from-bestsplit nm-extra num-ind ht-ind 0 (count sc-extra)))
     ;; (println (combine-ind nm-extra num-ind ht-ind))
 
-    (for [l lines]
+    #_(for [l lines]
       (do
       (newline)
       (println l)
       (println (one-line-sol l))
-      (println (part2-sol l))
+      ;; (println (part2-sol l))
       ))
 ))
 
