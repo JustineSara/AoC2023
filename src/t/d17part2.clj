@@ -232,3 +232,7 @@
   )
 
 ;; 1587 is too high
+;; 1449 is also too high
+;; so is 1432
+;; 1346 is not the right answer
+;; 1215 is the right answer
