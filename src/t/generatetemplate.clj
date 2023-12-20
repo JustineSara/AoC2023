@@ -36,7 +36,7 @@
 
 (defn -main
   [& args] 
-  (println \"day<DAYNUM\")
+  (println \"day<DAYNUM>\")
   (println sample)
   (newline)
   
