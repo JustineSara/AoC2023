@@ -69,7 +69,10 @@
 ;;   (prn l-points)
   (loop [l-pts l-points
          saved-pts []]
-    (if (empty? l-pts) saved-pts
+    (if (empty? l-pts) 
+      (let [minT (apply min (map first saved-pts))]
+        (into {} (map (fn [[t x y]] [(- t minT) [x y]]) saved-pts))
+        )
         (let [[[t x y :as pt] & l-pts] l-pts
               l-pts-neighbors (->> l-pts
                                    (filter (fn [[tt _  _]] (= (dec t) tt)))
