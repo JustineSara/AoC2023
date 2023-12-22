@@ -64,6 +64,18 @@
     )
   )
 
+(defn walk2
+  [pos-s gardens Nsteps]
+  (loop [n Nsteps
+         p-s pos-s]
+    (println "  " n " : " p-s)
+    (if (zero? n)
+      (count p-s)
+      (->>
+       p-s
+       (one-step gardens)
+       (recur (dec n))))))
+
 
 (defn d21p1
   [input Nsteps]
@@ -76,9 +88,9 @@
 
 (defn d21p2
   [input]
-  (let [x (parse-input input)
+  (let [[pos0 gardens] (parse-input input)
         ]
-    x
+    pos0
   ))
 
 (defn -main
@@ -88,11 +100,11 @@
   (newline)
   
   (println "part1")
-  (prn (d21p1 sample 6))
+  ;; (prn (d21p1 sample 6))
 ;;  (prn (d21p1 (slurp "input/day21.txt") 64))
   
 ;;  (newline)
 ;;  (println "part2")
-;;  (prn (d21p2 sample))
+ (prn (d21p2 sample) 6)
 ;;  (prn (d21p2 (slurp "input/day21.txt")))
   )
