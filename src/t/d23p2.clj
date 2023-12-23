@@ -235,15 +235,22 @@
 
     #_(dec (search-longest-path forest))
     ;; dec because we want the number of steps, not the number of tiles visited
-    #_(dec (search-longest-path-p2 
-          0
-          [{:pos (find-start-pos forest) :visited #{(find-start-pos forest)}}]
-          0
-          forest
-          (find-end-pos forest)
-          ))
+    #_(dec (search-longest-path-p2
+            0
+            [{:pos (find-start-pos forest) :visited #{(find-start-pos forest)}}]
+            0
+            forest
+            (find-end-pos forest)))
 
     (dec (search-with-segm forest))
+    
+    ;; looking at where are the intersections but did not help for ideas
+    #_(->> forest
+         get-segments
+         (map :from)
+         (set)
+         sort
+         )
     ))
 
 
