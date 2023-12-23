@@ -150,12 +150,6 @@
 
   ))
 
-(defn d23p2
-  [input]
-  (let [x (parse-input input)
-        ]
-    x
-  ))
 
 (defn -main
   [& args] 
@@ -164,8 +158,8 @@
   (newline)
   
   (println "part1")
-  (prn (d23p1 sample))
-  (prn (d23p1 (slurp "input/day23.txt")))
+  (time (prn (d23p1 sample)))
+  (time (prn (d23p1 (slurp "input/day23.txt"))))
   
 ;;  (newline)
 ;;  (println "part2")
