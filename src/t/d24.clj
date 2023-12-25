@@ -90,11 +90,62 @@
      (check-all-pair-loops hailstorms pmin pmax pmin pmax)
   ))
 
+
+(defn test-velocity
+  ;; test not parallele
+  [[_ _ _ vx vy vz] [VX VY VZ]]
+  (and
+   (not= (* vx VY) (* VX vy))
+   (not= (* vx VZ) (* VX vz))
+   (not= (* vz VY) (* VZ vy))
+   )
+  )
+
+(defn range-V
+  [hailstorms]
+  
+  (loop [ranges [[[##-Inf ##Inf] [##-Inf ##Inf]]]
+         hst hailstorms
+         ]
+    (if (empty? hst)
+      ranges
+      (let [[[x _ _ vx _ _ :as h] & hst] hst
+            ;; _ (println ranges)
+            ;; _ (println x vx)
+            new-ranges
+            (->> ranges
+             (mapcat (fn [[[xmin xmax] [vmin vmax]]]
+                         (cond 
+                           (<= x xmin) [[[xmin xmax] [vmin (min vmax vx)]]]
+                           (<= xmin x xmax) [[[xmin x] [(max vx vmin) vmax]] [[x xmax] [vmin (min vmax vx)]]]
+                           (<= xmax x) [[[xmin xmax] [(max vmin vx) vmax]]]) ))
+             (filter (fn [[[xmin xmax] [vmin vmax]]] (<= vmin vmax)))
+                 )
+            ;; _ (prn new-ranges)
+            ]
+        (recur new-ranges hst)
+        )
+      
+      )
+    
+    
+    )
+  
+  )
+
+
 (defn d24p2
   [input]
-  (let [x (parse-input input)
+  (let [hailstorms (parse-input input)
         ]
-    x
+    #_(for [VX (range -5 6)
+          VY (range -5 6)
+          VZ (range -5 6)
+          ]
+      (println VX VY VZ (every? identity (map #(test-velocity % [VX VY VZ]) hailstorms)))
+      
+      )
+    (range-V hailstorms)
   ))
 
 (defn -main
@@ -104,11 +155,11 @@
   (newline)
   
   (println "part1")
-  (prn (d24p1 sample 7 27))
- (prn (d24p1 (slurp "input/day24.txt") 200000000000000 400000000000000))
+;;   (prn (d24p1 sample 7 27))
+;;  (prn (d24p1 (slurp "input/day24.txt") 200000000000000 400000000000000))
   
-;;  (newline)
-;;  (println "part2")
-;;  (prn (d24p2 sample))
-;;  (prn (d24p2 (slurp "input/day24.txt")))
+ (newline)
+ (println "part2")
+ (prn (d24p2 sample))
+ (prn (d24p2 (slurp "input/day24.txt")))
   )
