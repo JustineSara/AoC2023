@@ -68,23 +68,25 @@
 ;;   list of points, point is [step x y]
 ;;   (prn l-points)
   (loop [l-pts l-points
-         saved-pts []]
+         saved-pts {}]
     (if (empty? l-pts) 
       (let [minT (apply min (map first saved-pts))]
-        (into {} (map (fn [[t x y]] [(- t minT) [x y]]) saved-pts))
+        [minT (into {} (map (fn [[t v]] [(- t minT) v]) saved-pts))]
+        ;; saved-pts
         )
         (let [[[t x y :as pt] & l-pts] l-pts
               l-pts-neighbors (->> l-pts
                                    (filter (fn [[tt _  _]] (= (dec t) tt)))
                                    (filter (fn [[_  xx yy]] (= 1 (+ (abs (- xx x)) (abs (- yy y)))))))]
           (if (empty? l-pts-neighbors)
-            (recur l-pts (conj saved-pts pt))
+            (recur l-pts (assoc saved-pts t (concat (get saved-pts t []) [[x y]])))
             (recur l-pts saved-pts))))))
 
 (defn walk-one-map
-  [pos-s gardens minmax]
+  [pos-in gardens minmax]
+;; pos-in is a dictionary of  time : tiles
   (loop [
-         p-s [pos-s]
+         p-s (get pos-in 0)
          pos-viewed #{}
          pos-out {}
          nstep 0
@@ -98,11 +100,12 @@
       (let [new-p-s (one-step (map (fn [p] [[0 0] p]) p-s) gardens minmax)
             p-s-out (->> new-p-s
                      (filter (fn [[g _]] (not= g [0 0])) )  
-                     (reduce (fn [po [g [px py]]] po (assoc po g (conj (get po g) [(inc nstep) px py]))) pos-out ))
+                     (reduce (fn [po [g [px py]]] (assoc po g (conj (get po g) [(inc nstep) px py]))) pos-out ))
             p-s-in (->> new-p-s
                     (filter (fn [[g _]] (= g [0 0])))
                     (filter (fn [[_ p]] (not (contains? pos-viewed p))))
                         (map second)
+                        (concat (get pos-in (inc nstep)))
                         )]
         ;; (println nstep Nvisited "  " p-s-in)
         ;; (println "  " p-s-out)
@@ -119,17 +122,30 @@
 
 (defn walk-maps
   [maps-tbw Nsteps gardens minmax]
-;; maps-tbw is a list of "maps" : { map-indices [step-on-which-enters  pos-on-which-enter]}
+;; maps-tbw is a list of "maps" : { map-indices [step-on-which-enters  {i-enter (start at 0) : positions-on-which-enter}]}
   (loop [m-tbw maps-tbw
          n-m-tbw {}
          [Neven Nodd] [0 0]]
     (if (empty? m-tbw)
       [n-m-tbw Neven Nodd]
-      (let [[[[MX MY] [NstepsStart pos0]] & m-tbw] m-tbw
-            [neven nodd nstep pos-out Nvisited] (walk-one-map-memo pos0 gardens minmax)
+      (let [[[[MX MY] [NstepsStart pos-in]] & m-tbw] m-tbw
+            [neven nodd nstep pos-out Nvisited] (walk-one-map-memo pos-in gardens minmax)
             n-m-tbw (->> pos-out
                          (map (fn [[[mx my] [steps p]]] [[(+ MX mx ) (+ MY my)] [steps p]]))
-                         (map (fn [[m [steps p]]] (when (and (< 1 steps) (<= (+ steps NstepsStart) Nsteps) (not (contains? n-m-tbw m))) [m [(+ steps NstepsStart) p]])))
+                         (map (fn [[m [steps p]]] (when (and (< 1 steps) (<= (+ steps NstepsStart) Nsteps) ) [m 
+                                                                                                              (if (contains? n-m-tbw m)
+                                                                                                                (let [this-step (+ steps NstepsStart)
+                                                                                                                      [prev-step prev-in] (get n-m-tbw m)
+                                                                                                                      prev-in (map (fn [[t v]] [(+ t prev-step) v]) prev-in)
+                                                                                                                      this-in (map (fn [[t v]] [(+ t this-step) v]) p)
+                                                                                                                      new-step (min this-step prev-step)]
+                                                                                                                  [new-step
+                                                                                                                   (->> prev-in
+                                                                                                                        (concat this-in)
+                                                                                                                        (group-by first)
+                                                                                                                        (map (fn [[t v]] [(- t new-step) (mapcat second v)]))
+                                                                                                                        (into {}))])
+                                                                                                                [(+ steps NstepsStart) p])])))
                          (keep identity)
                          (reduce (fn [n-m [k v]] (assoc n-m k v)) n-m-tbw ))
             ;; _ (println " " NstepsStart pos0)
@@ -153,12 +169,14 @@
   [maps-tbw Nsteps gardens minmax]
   (loop [m-tbw maps-tbw
          Neven 0
-         Nodd 0]
+         Nodd 0
+         iter 0]
+    (println "~" iter "~")
     (let [[new-m-tbw neven nodd] (walk-maps m-tbw Nsteps gardens minmax)]
-    ;;   (println "~~~~" new-m-tbw neven nodd)
+      (println "~~~~~" new-m-tbw neven nodd)
       (if (empty? new-m-tbw) 
         [(+ Neven neven) (+ Nodd nodd)]
-        (recur new-m-tbw (+ Neven neven) (+ Nodd nodd))))
+        (recur new-m-tbw (+ Neven neven) (+ Nodd nodd) (inc iter))))
   ))
 
 (defn d21
@@ -172,8 +190,14 @@
     ;; (one-step [[[0 0] [0 0]]] gardens [minX maxX minY maxY])
     ;; (walk-one-map pos0 gardens [minX maxX minY maxY])
     ;; (walk-one-map [10 4] gardens minmax)
-    (let [[Neven Nodd nstep pos-out Nvisited] (walk-one-map pos0 gardens minmax)
-          minS (into {} (map (fn [[k v]] [k (apply min (map first v))]) pos-out))]
+    #_(let [[Neven Nodd nstep pos-out Nvisited] (walk-one-map {0 [pos0]} gardens minmax)
+        ;;   minS (into {} (map (fn [[k v]] [k (apply min (map first v))]) pos-out))
+          _ (newline)
+          _ (println pos-out)
+          _ (println (second (get pos-out [-1 0])))
+          _ (newline)
+          [Neven Nodd nstep pos-out Nvisited] (walk-one-map (second (get pos-out [-1 0])) gardens minmax)
+          ]
       
       (->> pos-out
         ;;    first
@@ -183,9 +207,13 @@
         ;;    (into {})
         ;;    (sort-by first >)
            )
+      
 
       )
     ;; (if (even? Nsteps) Neven Nodd)
+
+    (walk-all-maps { [0 0] [0 {0 [pos0]}]} Nsteps gardens minmax)
+
   ))
 
 
@@ -201,11 +229,21 @@
   (println "6 steps => Expect 16")
   (prn (d21 sample 6))
   (newline)
-;;   (println "10 steps => Expect 50")
-;;   (prn (d21 sample 10))
+  (println "10 steps => Expect 50")
+  (prn (d21 sample 10))
+  (newline)
+  (println "50 steps => Expect 1594")
+  (prn (d21 sample 50))
 ;;   (newline)
-;;   (println "50 steps => Expect 1594")
-;;   (prn (d21 sample 50))
+;;   (println "100 steps => Expect 6536")
+;;   (prn (d21 sample 100))
+;;   (newline)
+;;   (println "500 steps => Expect 167004")
+;;   (prn (d21 sample 500))
+;;   (newline)
+;;   (println "1000 steps => Expect 668697")
+;;   (prn (d21 sample 1000))
+
 ;;   (newline)
 ;;  (prn (d21 (slurp "input/day21.txt") 64))
 ;;  (prn (d21 (slurp "input/day21.txt") 26501365))
