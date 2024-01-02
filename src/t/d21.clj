@@ -53,7 +53,7 @@
   [pos-s gardens Nsteps]
   (loop [n Nsteps
          p-s pos-s]
-    (println "  " n " : " p-s)
+    ;; (println "  " n " : " p-s)
     (if (zero? n)
       (count p-s)
       (->>
@@ -81,7 +81,7 @@
   [input Nsteps]
   (let [[pos0 gardens] (parse-input input)
         ]
-    (println "start at " pos0)
+    ;; (println "start at " pos0)
     ;; (one-step [pos0 pos0] gardens)
     (walk [pos0] gardens Nsteps)
   ))
@@ -100,11 +100,11 @@
   (newline)
   
   (println "part1")
-  ;; (prn (d21p1 sample 6))
-;;  (prn (d21p1 (slurp "input/day21.txt") 64))
+  (prn (d21p1 sample 6))
+  (prn (d21p1 (slurp "input/day21.txt") 64))
   
 ;;  (newline)
 ;;  (println "part2")
- (prn (d21p2 sample) 6)
+;;  (prn (d21p2 sample) 6)
 ;;  (prn (d21p2 (slurp "input/day21.txt")))
   )

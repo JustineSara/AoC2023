@@ -85,13 +85,15 @@
 (defn walk-one-map
   [pos-in gardens minmax]
 ;; pos-in is a dictionary of  time : tiles
+  (let [pos0s (set (get pos-in 0))
+        Npos0 (count pos0s)]
   (loop [
-         p-s (get pos-in 0)
+         p-s pos0s
          pos-viewed #{}
          pos-out {}
          nstep 0
-         Nvisited [1]
-         [Neven Nodd] [1 0]
+         Nvisited [Npos0]
+         [Neven Nodd] [Npos0 0]
          ]
     ;; (println "  " nstep " : " p-s)
     ;; (prn pos-viewed)
@@ -116,7 +118,7 @@
           (inc nstep)
           (concat Nvisited [(count p-s-in)])
           (if (zero? (mod nstep 2)) [Neven (+ Nodd (count p-s-in))] [ (+ Neven (count p-s-in)) Nodd]) )
-        ))))
+        )))))
 
 (def walk-one-map-memo (memoize walk-one-map))
 
@@ -130,6 +132,7 @@
       [n-m-tbw Neven Nodd]
       (let [[[[MX MY] [NstepsStart pos-in]] & m-tbw] m-tbw
             [neven nodd nstep pos-out Nvisited] (walk-one-map-memo pos-in gardens minmax)
+            ;; _ (println "  " MX MY neven nodd)
             n-m-tbw (->> pos-out
                          (map (fn [[[mx my] [steps p]]] [[(+ MX mx ) (+ MY my)] [steps p]]))
                          (map (fn [[m [steps p]]] (when (and (< 1 steps) (<= (+ steps NstepsStart) Nsteps) ) [m 
@@ -171,13 +174,145 @@
          Neven 0
          Nodd 0
          iter 0]
-    (println "~" iter "~")
+    ;; (println "~" iter "~") ;; Neven Nodd)
+    (when (zero? (mod iter 1000)) (println "~" iter "~")) ;; Neven Nodd)
     (let [[new-m-tbw neven nodd] (walk-maps m-tbw Nsteps gardens minmax)]
-      (println "~~~~~" new-m-tbw neven nodd)
+    ;;   (println "~~~~~" new-m-tbw neven nodd)
       (if (empty? new-m-tbw) 
         [(+ Neven neven) (+ Nodd nodd)]
         (recur new-m-tbw (+ Neven neven) (+ Nodd nodd) (inc iter))))
   ))
+
+
+(defn explore-simple-dir
+  [Map DIR Nsteps gardens minmax]
+  (loop [MAP Map
+         dir-sol 0
+         dir-start 0
+         iter 0]
+    (print iter " ")
+  (let [[neven nodd nstep map-out Nvisited] (walk-one-map-memo (second MAP) gardens minmax)
+        North-start (+ dir-start (first MAP))
+        sol_North (if (<= (+ North-start nstep) Nsteps)
+                    (if (even? North-start) neven nodd)
+                    (if (even? North-start)
+                      (apply + (map-indexed (fn [i n] (if (and (even? i) (<= i (- Nsteps North-start))) n 0)) Nvisited))
+                      (apply + (map-indexed (fn [i n] (if (and (odd? i) (<= i (- Nsteps North-start))) n 0)) Nvisited))))
+        sol_North (+ sol_North dir-sol)
+        n1 (get map-out DIR)
+          ;;   ne (get map-out [+1 0])
+          ;;   nw (get map-out [-1 0])
+        [neven nodd nstep map-out Nvisited] (walk-one-map-memo (second n1) gardens minmax)
+        n2 (get map-out DIR)]
+  
+    (if (< Nsteps (+ North-start (first n1)))    ;; only North in it
+      sol_North
+      (if (not= (second n1) (second n2))
+        (recur n1 sol_North North-start (inc iter))
+        (let [
+            ;;   _ (println " " MAP)
+            ;;   _ (println " " n1)
+            ;;   _ (println " " n2)
+              steps-before-next-map (first n2)
+              Ngridstartsin (quot (- Nsteps North-start (first n1)) steps-before-next-map)
+            ;;   _ (println "   " steps-before-next-map)
+            ;;   _ (println "   " (- Nsteps North-start (first n1)))
+            ;;   _ (println "   " Ngridstartsin)
+              ]
+          (if (zero? Ngridstartsin)                ;; North and n1 are part of it
+            (+ sol_North
+               (if (even? (first n1))
+                 (apply + (map-indexed (fn [i n] (if (and (even? i) (<= i (- Nsteps (first n1)))) n 0)) Nvisited))
+                 (apply + (map-indexed (fn [i n] (if (and (odd? i) (<= i (- Nsteps (first n1)))) n 0)) Nvisited))))
+            (let [
+                ;;   _ (prn  DIR Ngridstartsin  steps-before-next-map  North-start n1)
+                  before-last-start (+ (* (dec Ngridstartsin) steps-before-next-map) North-start (first n1))
+                  last-start (+ (* Ngridstartsin steps-before-next-map) North-start (first n1))]
+                  ;; if before-last is fully in (or not)
+              (if (<= (+ before-last-start nstep) Nsteps)
+                (let [N-grid-fully-in Ngridstartsin
+                      N-like-n2 (quot N-grid-fully-in 2)
+                      N-like-n1 (- N-grid-fully-in N-like-n2)]
+                  (+ sol_North
+                     (* (if (even? (first n1)) neven nodd)  N-like-n1)
+                     (* (if (even? (first n2)) neven nodd)  N-like-n2)
+                     (if (even? last-start)
+                       (apply + (map-indexed (fn [i n] (if (and (even? i) (<= i (- Nsteps last-start))) n 0)) Nvisited))
+                       (apply + (map-indexed (fn [i n] (if (and (odd?  i) (<= i (- Nsteps last-start))) n 0)) Nvisited)))))
+                (let [N-grid-fully-in (dec Ngridstartsin)
+                      N-like-n2 (quot N-grid-fully-in 2)
+                      N-like-n1 (- N-grid-fully-in N-like-n2)]
+                  (+ sol_North
+                     (* (if (even? (first n1)) neven nodd)  N-like-n1)
+                     (* (if (even? (first n2)) neven nodd)  N-like-n2)
+                     (if (even? before-last-start)
+                       (apply + (map-indexed (fn [i n] (if (and (even? i) (<= i (- Nsteps before-last-start))) n 0)) Nvisited))
+                       (apply + (map-indexed (fn [i n] (if (and (odd?  i) (<= i (- Nsteps before-last-start))) n 0)) Nvisited)))
+                     (if (even? last-start)
+                       (apply + (map-indexed (fn [i n] (if (and (even? i) (<= i (- Nsteps last-start))) n 0)) Nvisited))
+                       (apply + (map-indexed (fn [i n] (if (and (odd?  i) (<= i (- Nsteps last-start))) n 0)) Nvisited))))))))))))
+  ))
+
+(defn walk-with-pattern
+  [pos0 Nsteps gardens minmax]
+  (let [[Neven Nodd nstep map-out Nvisited] (walk-one-map-memo {0 [pos0]} gardens minmax)
+        Ntot Neven
+        North (get map-out [0 -1])
+        South (get map-out [0 +1])
+        East  (get map-out [+1  0])
+        West  (get map-out [-1  0])]
+
+    (println Ntot)
+    (println North)
+
+    (for [[Map DIR] [[North [0 -1]] [South [0 +1]] [East [+1 0]] [West [-1 0]]]]
+      (explore-simple-dir Map DIR Nsteps gardens minmax)
+    )
+
+
+      #_(loop [maps {:N [North]} ;; :NE [] :E [] :SE [] :S [] :SW [] :W [] :NW []}
+             known {:N [] :NE [] :E [] :SE [] :S [] :SW [] :W [] :NW []}
+             [Neven Nodd] [0 0]
+             iter 0]
+        (newline)
+        (println iter)
+        (println "maps  :" maps)
+        (println "known :" known)
+
+        (if (empty? maps)
+          (if (even? Nsteps) Neven Nodd)
+          (let [
+                north (first (get maps :N))
+                _ (println "  N maps :" (count (get maps :N)))
+                _ (println "  north  :" north)
+                NstepsStart (ffirst (get maps :N))
+                [neven nodd new-nstep map-out Nvisited] (walk-one-map-memo (second (first (get maps :N))) gardens minmax)
+                ;; _ (println " "neven nodd new-nstep )
+                _ (println "    map-out" map-out)
+                ntot (cond 
+                       (and (< Nsteps (+ NstepsStart new-nstep)) (even? NstepsStart))
+                       (apply + (map-indexed (fn [i n] (if (and (even? i) (<= i (- Nsteps NstepsStart))) n 0)) Nvisited ))
+                       (and (< Nsteps (+ NstepsStart new-nstep)) (odd? NstepsStart))
+                       (apply + (map-indexed (fn [i n] (if (and (odd? i) (<= i (- Nsteps NstepsStart))) n 0)) Nvisited))
+                       (even? NstepsStart) neven
+                       (odd?  NstepsStart) nodd
+                       )
+                ]
+            (if (some #(= (second north) (:map %))  (get known :N))
+              (println "!match at " iter "!")
+              (let [new-known {:step (first north) :map (second north) :ntot ntot :nsteps new-nstep :visited Nvisited}
+                    new-north (update (get map-out [0 -1]) 0 + NstepsStart)
+                    _ (println "    new-known :" new-known)
+                    _ (println "    new-north :" new-north)
+                    ]
+                (recur {:N [new-north]} (update known :N conj new-known) [Neven Nodd] (inc iter))
+                ))
+            ))
+        
+        )
+        
+    )
+  )
 
 (defn d21
   [input Nsteps]
@@ -212,8 +347,10 @@
       )
     ;; (if (even? Nsteps) Neven Nodd)
 
-    (walk-all-maps { [0 0] [0 {0 [pos0]}]} Nsteps gardens minmax)
+    #_(walk-all-maps { [0 0] [0 {0 [pos0]}]} Nsteps gardens minmax)
+    ;; (walk-one-map {1 '([10 7]), 0 '([10 0] [10 10] [10 4])} gardens minmax)
 
+    (walk-with-pattern pos0 Nsteps gardens minmax)
   ))
 
 
@@ -234,9 +371,9 @@
   (newline)
   (println "50 steps => Expect 1594")
   (prn (d21 sample 50))
-;;   (newline)
-;;   (println "100 steps => Expect 6536")
-;;   (prn (d21 sample 100))
+  (newline)
+  (println "100 steps => Expect 6536")
+  (prn (d21 sample 100))
 ;;   (newline)
 ;;   (println "500 steps => Expect 167004")
 ;;   (prn (d21 sample 500))
@@ -245,7 +382,18 @@
 ;;   (prn (d21 sample 1000))
 
 ;;   (newline)
+;;   (println "on input:")
+
+;;   (println "64 steps => Expect 3 733")
 ;;  (prn (d21 (slurp "input/day21.txt") 64))
+;;   (println "100 steps => Expect 8 971")
+;;  (prn (d21 (slurp "input/day21.txt") 100))
+;;   (println "500 steps => Expect 220 952")
+;;  (prn (d21 (slurp "input/day21.txt") 500))
+;;   (println "1000 steps => Expect 881 882")
+;;  (prn (d21 (slurp "input/day21.txt") 1000))
+;;   (println "5000 steps => Expect 21 995 272")
+;;  (time (prn (d21 (slurp "input/day21.txt") 5000)))
 ;;  (prn (d21 (slurp "input/day21.txt") 26501365))
 
   )
