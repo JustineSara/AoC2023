@@ -14,3 +14,4 @@ pom.xml.asc
 /input/*
 /others/*
 .clj-kondo/*
+.envrc.private
