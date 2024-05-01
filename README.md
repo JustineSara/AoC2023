@@ -24,6 +24,29 @@ Solution : better to use integer 64bit: Long\
 Let's **not** use `Long.` because again new object... instead : **`parse-long`**
 
 
+### Day 02
+
+#### `reduce` and `and`
+
+```clojure
+(defn iscolorok?
+  [color numb cubes]
+  (reduce (fn [a b] (and a b)) true
+          (map (fn [b] (<= (parse-long (re-find #"\d+" b)) numb))
+               (re-seq (re-pattern (str "\\d+ " color)) cubes))))
+```
+`reduce` needs a function of two elements\
+`and` is _not_ a function so we have to define one\
+we set `true` as a starting point in case the sequence has only one element
+
+#### destructuring
+ 
+with `fn [input]`\
+and `input` is `[game color]`\
+we can directly write: `fn[[game color]]` and call `game` and `color` in the rest
+
+#### max
+`max` is a function that exists ^^
 
 ## License
 
