@@ -578,9 +578,9 @@
     (println "smart answer :")
     (println (walk-with-pattern pos0 Nsteps gardens minmax))
 
-    (println "walk all maps :")
-    (let [[neven nodd] (walk-all-maps {[0 0] [0 {0 [pos0]}]} Nsteps gardens minmax)]
-      (println (if (even? Nsteps) neven nodd)))
+    ;; (println "walk all maps :")
+    ;; (let [[neven nodd] (walk-all-maps {[0 0] [0 {0 [pos0]}]} Nsteps gardens minmax)]
+    ;;   (println (if (even? Nsteps) neven nodd)))
 
     ;; (merge-in-pos [16 {0 '([0 0])}] [16 {0 '([0 0])}])
     ))
@@ -636,5 +636,5 @@
 
   )
 
-;; 6107040063 is too low
-;; 
+;;      6107040063 is too low
+;; 617729401414635
