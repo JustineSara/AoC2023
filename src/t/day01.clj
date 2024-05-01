@@ -1,8 +1,7 @@
 (ns t.day01
   (:gen-class)
   (:require
-   [clojure.string :as str]
-   [clojure.set :as cljset]))
+   [clojure.string :as str]))
 
 (def input "1abc2
 pqr3stu8vwx
