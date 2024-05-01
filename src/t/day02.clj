@@ -54,8 +54,8 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green")
 (def cubegame4
   "1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red")
 
-(defn mainD2
-  []
+(defn -main
+  [& args]
   (println "Day 2 - cube game")
   (println "~~~ part1 ~~~")
   (println (d2part1 inputd2))
