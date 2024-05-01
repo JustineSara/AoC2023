@@ -53,19 +53,18 @@ zoneight234
 ;;    parse-long
 
 
-(defn mainD1
-  []
-  (println "Hello, World!")
+(defn -main
+  [& args]
+  (println "day01")
   (println "Part 1")
   (println input)
   (println (sol1 input))
   (println "With my input:")
-  (println (sol1 myinput))
+  (println (sol1 (slurp "input/day1.txt")))
   (println "\nPart 2")
   (println input2)
   (println (sol2 input2))
   (println "With my input:")
-  (println (sol2 myinput))
   (println (sol2 (slurp "input/day1.txt"))))
 
   ;; (println "2two1sevenine")
