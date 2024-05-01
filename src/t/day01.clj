@@ -41,15 +41,6 @@ zoneight234
                                (maptonumber (re-find #"\d|eno|owt|eerht|ruof|evif|xis|neves|thgie|enin" (str/reverse l))))))
           (str/split-lines input))))
 
-;; Integer. : bad idea
-;;    capital letter = java class 
-;;    CapitalLetter + "." = contructor of the java class
-;;    - creates new object
-;;    - Integer : entier en 32bits  ==> max is 2.10^9 : not that much with advent of code and no warning/error
-;; 
-;; better solve : integer 64bit
-;; Long (don't use "Long." because again new object)
-;;    parse-long
 
 
 (defn -main

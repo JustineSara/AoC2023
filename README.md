@@ -4,6 +4,27 @@ My solutions to [Advent of Code 2023].
 
 [Advent of Code 2023]: https://adventofcode.com/2023
 
+## To run
+Use :
+```lein run -m t.day01```
+in the terminal.
+
+Change `day01` as needed.
+
+## Lessons (learned?)
+
+### Day 01
+
+Using `Integer.` is a bad idea.\
+Capital Letter ==> java class\
+Capital Letter + "." ==> constructor of the java class :\
+    - creates new object
+    - Integer : in 32bits  ==> max is 2.10^9 : not that much with advent of code and no warning/error
+Solution : better to use integer 64bit: Long\
+Let's **not** use `Long.` because again new object... instead : **`parse-long`**
+
+
+
 ## License
 
 Copyright © 2023 Justine Sara Pujos
