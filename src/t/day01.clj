@@ -1,8 +1,7 @@
-(ns t.core
+(ns t.day01
   (:gen-class)
   (:require
-   [clojure.string :as str]
-   [clojure.set :as cljset]))
+   [clojure.string :as str]))
 
 (def input "1abc2
 pqr3stu8vwx
@@ -42,30 +41,20 @@ zoneight234
                                (maptonumber (re-find #"\d|eno|owt|eerht|ruof|evif|xis|neves|thgie|enin" (str/reverse l))))))
           (str/split-lines input))))
 
-;; Integer. : bad idea
-;;    capital letter = java class 
-;;    CapitalLetter + "." = contructor of the java class
-;;    - creates new object
-;;    - Integer : entier en 32bits  ==> max is 2.10^9 : not that much with advent of code and no warning/error
-;; 
-;; better solve : integer 64bit
-;; Long (don't use "Long." because again new object)
-;;    parse-long
 
 
-(defn mainD1
-  []
-  (println "Hello, World!")
+(defn -main
+  [& args]
+  (println "day01")
   (println "Part 1")
   (println input)
   (println (sol1 input))
   (println "With my input:")
-  (println (sol1 myinput))
+  (println (sol1 (slurp "input/day1.txt")))
   (println "\nPart 2")
   (println input2)
   (println (sol2 input2))
   (println "With my input:")
-  (println (sol2 myinput))
   (println (sol2 (slurp "input/day1.txt"))))
 
   ;; (println "2two1sevenine")
